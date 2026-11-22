@@ -412,7 +412,9 @@ function OfferPanel({ game, nameOf }: { game: GameState; nameOf: (id: string) =>
         <button className="primary" onClick={() => dispatch({ type: "RESPOND_OFFER", playerId: o.awaiting, accept: true })}>
           Accepter
         </button>
-        <button onClick={() => dispatch({ type: "RESPOND_OFFER", playerId: o.awaiting, accept: false })}>Refuser</button>
+        <button className="danger" onClick={() => dispatch({ type: "RESPOND_OFFER", playerId: o.awaiting, accept: false })}>
+          Refuser l'offre
+        </button>
       </div>
       <div className="row">
         <input type="number" min={0} step={100} value={counter} onChange={(e) => setCounter(Number(e.target.value))} />
@@ -614,7 +616,9 @@ function LoanPanel({ game, you, nameOf }: { game: GameState; you: string; nameOf
             <button className="primary" onClick={() => dispatch({ type: "LOAN_ANSWER", playerId: you, lenderId: o.lenderId, accept: true })}>
               Accepter
             </button>
-            <button onClick={() => dispatch({ type: "LOAN_ANSWER", playerId: you, lenderId: o.lenderId, accept: false })}>Refuser</button>
+            <button className="danger" onClick={() => dispatch({ type: "LOAN_ANSWER", playerId: you, lenderId: o.lenderId, accept: false })}>
+              Refuser l'offre
+            </button>
           </div>
         </div>
       ))}

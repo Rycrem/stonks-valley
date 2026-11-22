@@ -97,6 +97,26 @@ describe("rooms", () => {
     expect(room.deadline).toBeNull();
   });
 
+  it("adds a few seconds to the auction timer on each bid", () => {
+    vi.useFakeTimers();
+    const { rooms, host } = setup();
+    rooms.start(host.code, host.playerId, "classique");
+    const room = rooms.get(host.code)!;
+    const [bidder, seller] = room.game!.players;
+    seller!.holdings = { nvidio: 10 };
+    room.game!.phase = "auction";
+    room.game!.auction = { chooserId: bidder!.id, sellerId: seller!.id, percentToSell: 5, company: "nvidio", percent: 5, startPrice: 100, highestBid: 0, highestBidderId: null, bids: [] };
+    expect(rooms.act(host.code, bidder!.id, { type: "BID", playerId: bidder!.id, amount: 100 }).ok).toBe(true);
+    const first = room.deadline!;
+    vi.advanceTimersByTime(10_000);
+    expect(rooms.act(host.code, bidder!.id, { type: "BID", playerId: bidder!.id, amount: 100 + config.minBidIncrement }).ok).toBe(true);
+    expect(room.deadline).toBe(first + config.auctionBidExtraSeconds * 1000);
+    vi.advanceTimersByTime(first - Date.now() + 1000);
+    expect(room.game!.phase).toBe("auction");
+    vi.advanceTimersByTime(config.auctionBidExtraSeconds * 1000);
+    expect(room.game!.phase).not.toBe("auction");
+  });
+
   it("plays automatically for a disconnected player after a delay", () => {
     vi.useFakeTimers();
     const { rooms, host, guest } = setup();

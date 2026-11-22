@@ -50,6 +50,7 @@ export interface GameConfig {
   auctionMaxPercent: number;
   minBidIncrement: number;
   auctionTimeoutSeconds: number;
+  auctionBidExtraSeconds: number;
   offerTimeoutSeconds: number;
   monopolyMultiplier: number;
   bankBuybackRatio: number;

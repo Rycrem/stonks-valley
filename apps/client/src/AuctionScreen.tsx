@@ -16,6 +16,10 @@ function useRemaining(a: Auction | null, online: boolean, onExpire: () => void) 
   useEffect(() => {
     localEnd.current = lot ? Date.now() + config.auctionTimeoutSeconds * 1000 : null;
   }, [lot]);
+  const bids = a?.bids.length ?? 0;
+  useEffect(() => {
+    if (localEnd.current && bids > 0) localEnd.current += config.auctionBidExtraSeconds * 1000;
+  }, [bids]);
   useEffect(() => {
     if (!lot) return;
     const id = setInterval(() => setNow(Date.now()), 100);
@@ -119,7 +123,7 @@ export function AuctionScreen({ game }: { game: GameState }) {
           </div>
           <div className="bids">
             <div className="bar">
-              <b style={{ width: `${(left / config.auctionTimeoutSeconds) * 100}%` }} />
+              <b style={{ width: `${Math.min(100, (left / config.auctionTimeoutSeconds) * 100)}%` }} />
             </div>
             {a.bids.length === 0 && <p className="muted">Aucune offre pour l'instant. Sans offre, la banque rachète à la mise à prix.</p>}
             {[...a.bids]

@@ -4,7 +4,7 @@ import type { Deal, GameMode, GameState, Loan, NewGameEvent, Player, PlayerId } 
 import type { CompanyId } from "./types";
 
 export type Action =
-  | { type: "ROLL"; playerId: PlayerId }
+  | { type: "ROLL"; playerId: PlayerId; dice?: [number, number] }
   | { type: "BUY"; playerId: PlayerId; purchases: Record<CompanyId, number> }
   | { type: "BUY_ATOUT"; playerId: PlayerId }
   | { type: "SELL_TO_BANK"; playerId: PlayerId; company: CompanyId; percent: number }
@@ -516,8 +516,10 @@ export function applyAction(prev: GameState, action: Action): Result {
   switch (action.type) {
     case "ROLL": {
       if (!isCurrent || state.phase !== "roll") return { ok: false, error: "Ce n'est pas le moment de lancer les dés" };
-      const [d1, s1] = rollDie(state.seed);
-      const [d2, s2] = rollDie(s1);
+      if (action.dice && !action.dice.every((d) => Number.isInteger(d) && d >= 1 && d <= 6)) return { ok: false, error: "Dés invalides" };
+      // forced dice: only the admin may send them, checked by the server
+      const [d1, s1] = action.dice ? [action.dice[0], state.seed] : rollDie(state.seed);
+      const [d2, s2] = action.dice ? [action.dice[1], s1] : rollDie(s1);
       state.seed = s2;
       state.lastRoll = [d1, d2];
       const to = cur.position + d1 + d2;

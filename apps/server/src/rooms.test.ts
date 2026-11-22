@@ -39,6 +39,30 @@ describe("rooms", () => {
     expect(rooms.join(host.code, "Chloé", "tok-c").ok).toBe(false);
   });
 
+  it("only the admin account chooses the next roll of any player", () => {
+    const profiles = new Profiles(null, { name: "Rycrem", password: "secret" });
+    const admin = profiles.login("Rycrem", "secret", "tok-r");
+    if (!admin.ok) throw new Error();
+    const rooms = new Rooms(profiles, () => {});
+    const host = rooms.create("Rycrem", admin.data.token);
+    if (!host.ok) throw new Error();
+    const guest = rooms.join(host.data.code, "Bob", "tok-b");
+    if (!guest.ok) throw new Error();
+    const code = host.data.code;
+    const bob = guest.data.playerId;
+    rooms.start(code, host.data.playerId, "classique");
+    const room = rooms.get(code)!;
+    expect(rooms.act(code, bob, { type: "ROLL", playerId: bob, dice: [2, 3] }).ok).toBe(false);
+    expect(rooms.setDice(code, bob, bob, [6, 6]).ok).toBe(false);
+    expect(rooms.setDice(code, host.data.playerId, bob, [2, 3]).ok).toBe(true);
+    expect(rooms.view(room, bob).nextDice).toEqual({});
+    expect(rooms.view(room, host.data.playerId).nextDice).toEqual({ [bob]: [2, 3] });
+    room.game!.current = room.game!.players.findIndex((p) => p.id === bob);
+    expect(rooms.act(code, bob, { type: "ROLL", playerId: bob }).ok).toBe(true);
+    expect(room.game!.lastRoll).toEqual([2, 3]);
+    expect(room.nextDice).toEqual({});
+  });
+
   it("players can only act for themselves", () => {
     const { rooms, host, guest } = setup();
     rooms.start(host.code, host.playerId, "classique");

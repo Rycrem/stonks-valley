@@ -1,3 +1,4 @@
+import { DiceAdmin } from "./DiceAdmin";
 import { AtoutOffer } from "./AtoutOffer";
 import { AuctionScreen } from "./AuctionScreen";
 import { Board } from "./Board";
@@ -28,6 +29,7 @@ export function App() {
         <AuctionScreen game={game} />
         <AtoutOffer game={game} />
         <InspectPanel game={game} />
+        <DiceAdmin game={game} />
         {online && room && you && <Chat room={room} you={you} />}
       </div>
       <GamePanel game={game} />

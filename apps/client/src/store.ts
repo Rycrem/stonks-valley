@@ -69,6 +69,9 @@ interface Store {
   startOnline: (mode: GameMode, startingCash: number) => void;
   kick: (playerId: string) => void;
   dispatch: (action: Action) => boolean;
+  // admin: dice forced for each player's next roll on this screen (online they live on the server)
+  localDice: Record<string, [number, number]>;
+  setNextDice: (playerId: string, dice: [number, number] | null) => void;
   sendChat: (channel: string, text: string) => void;
   createGroup: (name: string, members: string[]) => Promise<string | null>;
   leaveGroup: (groupId: string) => void;
@@ -206,6 +209,12 @@ export const useStore = create<Store>((set, get) => {
       socket?.emit("room:kick", playerId, (res) => {
         if (!res.ok) set({ error: res.error });
       }),
+    localDice: {},
+    setNextDice: (playerId, dice) => {
+      if (get().online) return void socket?.emit("admin:dice", playerId, dice, (res) => set({ error: res.ok ? null : res.error }));
+      const { [playerId]: _, ...rest } = get().localDice;
+      set({ localDice: dice ? { ...rest, [playerId]: dice } : rest });
+    },
     dispatch: (action) => {
       if (get().online) {
         socket?.emit("game:action", action, (res) => set({ error: res.ok ? null : res.error }));
@@ -213,12 +222,14 @@ export const useStore = create<Store>((set, get) => {
       }
       const game = get().game;
       if (!game) return false;
+      const { [action.type === "ROLL" ? action.playerId : ""]: forced, ...rest } = get().localDice;
+      if (forced && action.type === "ROLL") action = { ...action, dice: forced };
       const r = applyAction(game, action);
       if (!r.ok) {
         set({ error: r.error });
         return false;
       }
-      set({ game: r.state, error: null });
+      set({ game: r.state, error: null, ...(forced && { localDice: rest }) });
       return true;
     },
     sendChat: (channel, text) =>

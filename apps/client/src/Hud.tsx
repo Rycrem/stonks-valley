@@ -27,15 +27,25 @@ export function TurnBanner({ game }: { game: GameState }) {
   useEffect(() => {
     if (game.phase !== "roll") return;
     setShown(p.id);
-    const t = setTimeout(() => setShown(null), 2200);
+    const t = setTimeout(() => setShown(null), 2400);
     return () => clearTimeout(t);
   }, [p.id, game.phase === "roll"]);
   if (shown !== p.id || game.phase === "gameOver") return null;
   const i = game.players.findIndex((x) => x.id === p.id);
   return (
-    <div className="turn-banner" key={p.id}>
-      <span className="dot" style={{ background: PLAYER_COLORS[i] }} />
-      {you === p.id ? "À toi de jouer !" : `Au tour de ${p.name}`}
+    <div className="turn-popup" key={p.id}>
+      <div className="event-card">
+        <div className="head" style={{ background: PLAYER_COLORS[i] }}>
+          <span className="icon">🎲</span>
+          NOUVEAU TOUR
+        </div>
+        <div className="body">
+          <div className="turn-name" style={{ color: PLAYER_COLORS[i] }}>
+            {p.name}
+          </div>
+          <div className="text">{you === p.id ? "À toi de jouer !" : "va jouer"}</div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { actuCards, board, companies, config, markets } from "./data";
 import { nextRandom, rollDie } from "./rng";
-import type { Deal, GameMode, GameState, Loan, NewGameEvent, Player, PlayerId } from "./state";
+import type { Deal, GameMode, GameState, Loan, NewGameEvent, Player, PlayerId, PlayerStats } from "./state";
 import type { CompanyId } from "./types";
 
 export type Action =
@@ -93,6 +93,7 @@ export function createGame(players: { id: PlayerId; name: string }[], seed: numb
     nextAllianceId: 1,
     events: [],
     nextEventId: 1,
+    stats: { players: {}, landings: {}, companyRoyalties: {}, history: [] },
     turnBuys: {},
     turnDeals: [],
     debt: null,
@@ -131,7 +132,69 @@ export function rollTurnOrder(state: GameState): GameState {
 
 const MAX_EVENTS = 40;
 
+function blankStats(): PlayerStats {
+  return { rolls: 0, doubles: 0, distance: 0, royaltiesPaid: 0, royaltiesReceived: 0, biggestPaid: 0, biggestReceived: 0, cardsGain: 0, cardsLoss: 0, spentOnStocks: 0, percentBought: 0, salesIncome: 0, auctionsWon: 0, auctionSpent: 0, auctionIncome: 0, atouts: 0, peakWorth: 0 };
+}
+
+export function statsOf(state: GameState, id: PlayerId): PlayerStats {
+  state.stats ??= { players: {}, landings: {}, companyRoyalties: {}, history: [] };
+  return (state.stats.players[id] ??= blankStats());
+}
+
+function record(state: GameState, e: NewGameEvent): void {
+  switch (e.kind) {
+    case "roll": {
+      const s = statsOf(state, e.playerId);
+      s.rolls += 1;
+      s.distance += e.dice[0] + e.dice[1];
+      if (e.dice[0] === e.dice[1]) s.doubles += 1;
+      state.stats.landings[e.to] = (state.stats.landings[e.to] ?? 0) + 1;
+      break;
+    }
+    case "actu": case "ipo": case "krach": case "lap": case "double": case "jackpot": case "levee": {
+      const s = statsOf(state, e.playerId);
+      if (e.amount > 0) s.cardsGain += e.amount;
+      else s.cardsLoss -= e.amount;
+      break;
+    }
+    case "atout":
+      if (e.text.startsWith("Atout pris")) statsOf(state, e.playerId).atouts += 1;
+      break;
+    case "royalty": {
+      const s = statsOf(state, e.playerId);
+      s.royaltiesPaid += e.amount;
+      s.biggestPaid = Math.max(s.biggestPaid, e.amount);
+      state.stats.companyRoyalties[e.company] = (state.stats.companyRoyalties[e.company] ?? 0) + e.amount;
+      break;
+    }
+    case "buys":
+      for (const d of e.deals) statsOf(state, d.sellerId).salesIncome += d.price;
+      break;
+    case "auction":
+      if (e.cancelled) break;
+      statsOf(state, e.sellerId).auctionIncome += e.price;
+      if (e.winnerId) {
+        statsOf(state, e.winnerId).auctionsWon += 1;
+        statsOf(state, e.winnerId).auctionSpent += e.price;
+      }
+      break;
+  }
+}
+
+// Net worth of everyone, once per round and at the end
+function snapshot(state: GameState): void {
+  const row: Record<PlayerId, number> = {};
+  for (const p of state.players) {
+    row[p.id] = p.bankrupt ? 0 : netWorth(p);
+    const s = statsOf(state, p.id);
+    s.peakWorth = Math.max(s.peakWorth, row[p.id]!);
+  }
+  state.stats.history.push(row);
+}
+
 function emit(state: GameState, e: NewGameEvent): void {
+  record(state, e);
+  if (e.kind === "win") snapshot(state);
   state.events.push({ ...e, id: state.nextEventId++ } as GameState["events"][number]);
   if (state.events.length > MAX_EVENTS) state.events.splice(0, state.events.length - MAX_EVENTS);
 }
@@ -356,6 +419,9 @@ function payRoyalty(state: GameState, payer: Player, cellId: string): void {
       }
       // the bank covers a bankrupt player's debt, so holders are always paid in full
       earn(state, m, part);
+      const ms = statsOf(state, m.id);
+      ms.royaltiesReceived += part;
+      ms.biggestReceived = Math.max(ms.biggestReceived, part);
       if (part > 0 && spendAtout(m, "dividende")) money(state, m, "atout", `Dividende exceptionnel : la banque double ta redevance ${name}.`, part);
     }
     state.loans = state.loans.filter((l) => loanLeft(l) > 0);
@@ -491,6 +557,7 @@ function nextTurn(state: GameState): void {
   let i = state.current;
   do i = (i + 1) % n;
   while (state.players[i]!.bankrupt);
+  if (i <= state.current) snapshot(state);
   state.current = i;
   state.phase = "roll";
   state.buyScope = null;
@@ -573,6 +640,8 @@ export function applyAction(prev: GameState, action: Action): Result {
       }
       cur.cash -= cost;
       state.boughtThisTurn += total;
+      statsOf(state, cur.id).spentOnStocks += cost;
+      statsOf(state, cur.id).percentBought += total;
       return { ok: true, state };
     }
 

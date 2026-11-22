@@ -90,6 +90,37 @@ export type GameEvent =
   | { id: number; kind: "win"; playerId: PlayerId };
 export type NewGameEvent = GameEvent extends infer E ? (E extends GameEvent ? Omit<E, "id"> : never) : never;
 
+// Totals kept for the end of game stats (events only keep the last few)
+export interface PlayerStats {
+  rolls: number;
+  doubles: number;
+  distance: number;
+  royaltiesPaid: number;
+  royaltiesReceived: number;
+  biggestPaid: number;
+  biggestReceived: number;
+  cardsGain: number;
+  cardsLoss: number;
+  spentOnStocks: number;
+  percentBought: number;
+  salesIncome: number;
+  auctionsWon: number;
+  auctionSpent: number;
+  auctionIncome: number;
+  atouts: number;
+  peakWorth: number;
+}
+
+export interface GameStats {
+  players: Record<PlayerId, PlayerStats>;
+  // times each board cell was landed on
+  landings: Record<number, number>;
+  // royalties paid per company
+  companyRoyalties: Record<string, number>;
+  // net worth of each player at the end of each round
+  history: Record<PlayerId, number>[];
+}
+
 export type Phase = "roll" | "act" | "auction" | "gameOver";
 export type GameMode = "classique" | "chrono";
 
@@ -129,4 +160,5 @@ export interface GameState {
   market: Record<string, number>;
   // fines and taxes collected by the stock exchange tower, won with the jackpot card
   pot: number;
+  stats: GameStats;
 }

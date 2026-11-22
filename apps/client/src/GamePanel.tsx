@@ -1,6 +1,6 @@
 import { activePlayers, allianceOf, atoutById, board, buyableStock, buyCost, config, RACHAT_BONUS, currentPlayer, markets, netWorth, ranking, royaltyFor, royaltyQuote, trendOf, type GameEvent, type GameState } from "@stonks/engine";
 import { useEffect, useState } from "react";
-import { companyById, money, PLAYER_COLORS } from "./format";
+import { allianceColor, companyById, money, PLAYER_COLORS } from "./format";
 import { AnimatedMoney } from "./Overlay";
 import { useStore } from "./store";
 
@@ -217,7 +217,7 @@ function Players({ game, colorOf }: { game: GameState; colorOf: (id: string) => 
             <span className="dot" style={{ background: colorOf(p.id) }} />
             <strong>{p.name}</strong>
             {offline.has(p.id) && !p.bankrupt && <span className="offline">déconnecté</span>}
-            {allianceOf(game, p.id) && <span className="chip alliance">Alliance {allianceOf(game, p.id)!.id.slice(1)}</span>}
+            {allianceOf(game, p.id) && <span className="chip alliance" style={{ background: allianceColor(allianceOf(game, p.id)!.id), color: "#1b2433", textShadow: "none" }}>Alliance {allianceOf(game, p.id)!.id.slice(1)}</span>}
             {sent.includes(p.id) && <small className="muted">invité</small>}
             {canInvite(p.id) && (
               <button className="ally-btn" title="Proposer une alliance" onClick={() => dispatch({ type: "ALLIANCE_INVITE", playerId: you!, targetId: p.id })}>

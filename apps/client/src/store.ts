@@ -87,7 +87,8 @@ export const useStore = create<Store>((set, get) => {
     socket = io({ autoConnect: true });
     socket.on("room:state", (room) => {
       // ignore late updates from a room we just left
-      if (get().online) set({ room, game: room.game });
+      // the server's clock may differ from this device's: rebuild the deadline from the time left
+      if (get().online) set({ room: { ...room, deadline: room.timeLeftMs === null ? null : Date.now() + room.timeLeftMs }, game: room.game });
     });
     socket.on("room:kicked", () => {
       saveSession(null);

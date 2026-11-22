@@ -8,6 +8,9 @@ export function money(k: number): string {
 }
 
 export const PLAYER_COLORS = ["#ff5d73", "#3dd6d0", "#ffd166", "#9b5de5", "#06d6a0", "#f78c6b"];
+// alliances get their own colors, distinct from the players'
+export const ALLIANCE_COLORS = ["#ffffff", "#a0c4ff", "#ffc6ff"];
+export const allianceColor = (id: string) => ALLIANCE_COLORS[(Number(id.slice(1)) - 1) % ALLIANCE_COLORS.length]!;
 
 // Varied free looks for players on the same screen
 export const STARTER_LOOKS: Look[] = [

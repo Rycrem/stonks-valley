@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { companyById, PLAYER_COLORS } from "../format";
+import { allianceColor, companyById, PLAYER_COLORS } from "../format";
 import { pawnDataUrl } from "../pawn";
 import { campus, ownerGlow, skyscraper, tierOf } from "./buildings";
 
@@ -514,11 +514,21 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
     return Math.max(0, ...groups.values());
   }
 
-  // index of the player holding the most of a company, -1 when nobody or a tie
-  function topHolder(game: GameState, company: string) {
-    const held = game.players.map((p) => (p.bankrupt ? 0 : (p.holdings[company] ?? 0)));
-    const max = Math.max(...held);
-    return max > 0 && held.filter((h) => h === max).length === 1 ? held.indexOf(max) : -1;
+  // color of the player or alliance holding the most of a company, null when nobody or a tie
+  function topHolderColor(game: GameState, company: string): string | null {
+    const groups = new Map<string, { held: number; color: string }>();
+    game.players.forEach((p, i) => {
+      if (p.bankrupt || !p.holdings[company]) return;
+      const alliance = allianceOf(game, p.id);
+      const key = alliance?.id ?? p.id;
+      const g = groups.get(key) ?? { held: 0, color: alliance ? allianceColor(alliance.id) : PLAYER_COLORS[i]! };
+      g.held += p.holdings[company]!;
+      groups.set(key, g);
+    });
+    const all = [...groups.values()];
+    const max = Math.max(0, ...all.map((g) => g.held));
+    const top = all.filter((g) => g.held === max);
+    return max > 0 && top.length === 1 ? top[0]!.color : null;
   }
 
   function highlight(buy: number[], pay: number[]) {
@@ -599,7 +609,7 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
       const company = companyById.get(game.royalties[cell.id]!)!;
       const pct = biggestHolding(game, company.id);
       const hub = cell.region === "hubs";
-      const holder = topHolder(game, company.id);
+      const holder = topHolderColor(game, company.id);
       const key = `${company.id}:${pct ? tierOf(pct) : -1}:${holder}`;
       if (built.get(i) === key) return;
       built.set(i, key);
@@ -620,7 +630,7 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
       // nobody holds it yet: the lot stays empty
       const b = !pct ? new THREE.Group() : campusStyle ? campus(tierOf(pct), company.color) : skyscraper(tierOf(pct), company.color);
       const size = campusStyle ? (hub ? 0.9 : 0.75) : 0.8;
-      if (pct && holder >= 0) ownerGlow(b, PLAYER_COLORS[holder]!);
+      if (pct && holder) ownerGlow(b, holder);
       deco.add(b);
       if (first) {
         old.forEach((o) => (disposeTree(o), deco.remove(o)));

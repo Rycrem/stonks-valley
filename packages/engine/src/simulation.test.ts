@@ -92,6 +92,10 @@ describe("simulated games", () => {
         totalTurns += turns;
         expect(activePlayers(g)).toHaveLength(1);
         expect(g.winner).toBe(activePlayers(g)[0]!.id);
+        const st = g.stats.players;
+        expect(Object.values(st).reduce((a, s) => a + s.rolls, 0)).toBe(Object.values(g.stats.landings).reduce((a, n) => a + n, 0));
+        expect(Object.values(st).reduce((a, s) => a + s.royaltiesPaid, 0)).toBe(Object.values(g.stats.companyRoyalties).reduce((a, n) => a + n, 0));
+        expect(g.stats.history.at(-1)![g.winner!]).toBeGreaterThan(0);
       }
     }
     console.log(`${finished}/30 parties terminées, ${finished ? Math.round(totalTurns / finished) : 0} tours en moyenne`);

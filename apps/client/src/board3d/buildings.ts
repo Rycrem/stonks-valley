@@ -1,14 +1,8 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
-// Tier by the biggest holder's %: 0 = 1-9 %, 1 = 10-29 %, 2 = 30-59 %, 3 = 60-99 %, 4 = 100 %
-export function tierOf(percent: number): number {
-  return percent >= 100 ? 4 : percent >= 60 ? 3 : percent >= 30 ? 2 : percent >= 10 ? 1 : 0;
-}
-
 const std = (color: THREE.ColorRepresentation, o: THREE.MeshStandardMaterialParameters = {}) =>
   new THREE.MeshStandardMaterial({ color, roughness: 0.45, ...o });
-const glass = () => std("#a9d8ff", { metalness: 0.7, roughness: 0.08, emissive: "#2d6ea8", emissiveIntensity: 0.3 });
 const gold = () => std("#ffcf4a", { metalness: 0.85, roughness: 0.22, emissive: "#8a6a10", emissiveIntensity: 0.35 });
 const shade = (hex: string, k: number) => new THREE.Color(hex).offsetHSL(0, 0, k);
 
@@ -107,68 +101,6 @@ function giantTower(color: string, logo?: THREE.Texture) {
   mesh(g, new THREE.CylinderGeometry(0.008, 0.03, 0.7, 8), std("#e8eef5", { metalness: 0.9, roughness: 0.15 }), 0, y + 0.35, 0);
   logoPanel(g, logo, 0.16, 0, 0.32, 0.2);
   monopolyAura(g, y + 0.6);
-  return g;
-}
-
-// Cities: a skyscraper that grows floor by floor, gets a spire, then a gold crown at 100 %
-export function skyscraper(tier: number, color: string, logo?: THREE.Texture) {
-  const g = new THREE.Group();
-  const floors = [2, 4, 7, 10, 12][tier]!;
-  const fh = 0.11;
-  const w = [0.3, 0.32, 0.34, 0.36, 0.36][tier]!;
-  const facade = new THREE.MeshStandardMaterial({ map: windowsTex(shade(color, -0.12).getStyle(), floors, 3), roughness: 0.3, metalness: 0.3 });
-  const plain = std(color);
-  mesh(g, new RoundedBoxGeometry(w + 0.08, 0.06, w + 0.08, 2, 0.02), std(shade(color, -0.2)), 0, 0.03, 0);
-  const h = floors * fh;
-  mesh(g, new THREE.BoxGeometry(w, h, w), [facade, facade, plain, plain, facade, facade], 0, 0.06 + h / 2, 0);
-  if (tier >= 2) mesh(g, new THREE.BoxGeometry(w * 0.7, 0.18, w * 0.7), plain, 0, 0.06 + h + 0.09, 0);
-  if (tier >= 3) mesh(g, new THREE.ConeGeometry(0.03, 0.35, 8), std("#dfe6ee", { metalness: 0.8 }), 0, 0.06 + h + 0.36, 0);
-  if (tier === 4) {
-    const crown = mesh(g, new THREE.CylinderGeometry(0.16, 0.13, 0.12, 6, 1, true), gold(), 0, 0.06 + h + 0.24, 0);
-    (crown.material as THREE.Material).side = THREE.DoubleSide;
-    monopolyAura(g, h + 0.5);
-  }
-  logoPanel(g, logo, w * 0.8, 0, 0.06 + h - w * 0.5, w / 2 + 0.005);
-  return g;
-}
-
-// Tech hubs: start-up garage, offices, glass HQ, campus, then a ring HQ at 100 %
-export function campus(tier: number, color: string, logo?: THREE.Texture) {
-  const g = new THREE.Group();
-  if (tier === 0) {
-    mesh(g, new THREE.BoxGeometry(0.34, 0.2, 0.3), std("#e9e1d0"), 0, 0.14, 0);
-    const roof = mesh(g, new THREE.CylinderGeometry(0.01, 0.24, 0.14, 4), std(color), 0, 0.31, 0);
-    roof.rotation.y = Math.PI / 4;
-    mesh(g, new THREE.BoxGeometry(0.2, 0.13, 0.01), std("#7a8794"), 0, 0.105, 0.151);
-    logoPanel(g, logo, 0.12, 0, 0.36, 0.13);
-  } else if (tier === 1) {
-    mesh(g, new RoundedBoxGeometry(0.5, 0.28, 0.36, 2, 0.03), std("#eef2f6"), 0, 0.18, 0);
-    mesh(g, new THREE.BoxGeometry(0.5, 0.08, 0.37), glass(), 0, 0.22, 0);
-    mesh(g, new THREE.BoxGeometry(0.52, 0.03, 0.38), std(color), 0, 0.335, 0);
-    logoPanel(g, logo, 0.16, 0, 0.2, 0.19);
-  } else if (tier === 2) {
-    mesh(g, new RoundedBoxGeometry(0.56, 0.5, 0.4, 2, 0.04), glass(), 0, 0.29, 0);
-    for (let i = 0; i < 4; i++) mesh(g, new THREE.BoxGeometry(0.57, 0.02, 0.41), std(color), 0, 0.12 + i * 0.13, 0);
-    logoPanel(g, logo, 0.2, 0, 0.36, 0.205);
-  } else if (tier === 3) {
-    mesh(g, new RoundedBoxGeometry(0.4, 0.62, 0.3, 2, 0.04), glass(), -0.12, 0.35, -0.08);
-    mesh(g, new RoundedBoxGeometry(0.28, 0.36, 0.26, 2, 0.04), std("#eef2f6"), 0.2, 0.22, 0.12);
-    mesh(g, new THREE.BoxGeometry(0.42, 0.03, 0.32), std(color), -0.12, 0.67, -0.08);
-    mesh(g, new THREE.BoxGeometry(0.06, 0.04, 0.3), glass(), 0.05, 0.3, 0.04).rotation.y = 0.7;
-    logoPanel(g, logo, 0.2, -0.12, 0.45, 0.075);
-  } else {
-    const ring = mesh(g, new THREE.TorusGeometry(0.27, 0.085, 16, 48), glass(), 0, 0.12, 0);
-    ring.rotation.x = Math.PI / 2;
-    ring.scale.z = 1.5;
-    const top = mesh(g, new THREE.TorusGeometry(0.27, 0.09, 16, 48), std(color), 0, 0.2, 0);
-    top.rotation.x = Math.PI / 2;
-    top.scale.z = 0.25;
-    mesh(g, new RoundedBoxGeometry(0.16, 0.62, 0.16, 2, 0.03), gold(), 0, 0.36, 0);
-    logoPanel(g, logo, 0.13, 0, 0.55, 0.082);
-    monopolyAura(g, 0.7);
-  }
-  // drawn for a 4 cm lawn that is gone: set everything down on the cell
-  for (const c of g.children) c.position.y -= 0.04;
   return g;
 }
 

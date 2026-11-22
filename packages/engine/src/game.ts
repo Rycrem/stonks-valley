@@ -38,10 +38,10 @@ export const ATOUTS = [
   { id: "bouclier", name: "Bouclier anti-OPA", text: "Annule la prochaine enchère forcée sur tes actions." },
   { id: "exoneration", name: "Exonération", text: "Ta prochaine redevance à payer est offerte." },
   { id: "dividende", name: "Dividende exceptionnel", text: "La prochaine redevance que tu touches est doublée par la banque." },
-  { id: "rachat", name: "Rachat express", text: "À utiliser pendant ton tour : +15 % d'achat autorisé ce tour-ci." },
+  { id: "rachat", name: "Rachat express", text: "Se déclenche tout seul si tu achètes plus de 30 % dans un tour : +15 % d'achat autorisé ce tour-ci." },
 ] as const;
 export const atoutById = new Map<string, (typeof ATOUTS)[number]>(ATOUTS.map((a) => [a.id, a]));
-const RACHAT_BONUS = 15;
+export const RACHAT_BONUS = 15;
 
 // Removes one card of that kind, returns whether the player had it
 function spendAtout(p: Player, id: string): boolean {
@@ -545,7 +545,12 @@ export function applyAction(prev: GameState, action: Action): Result {
       const total = wanted.reduce((a, [, pct]) => a + pct, 0);
       if (wanted.some(([, pct]) => !Number.isInteger(pct) || pct < 0)) return { ok: false, error: "Pourcentage invalide" };
       if (state.boughtThisTurn + total > config.maxPurchasePercent) {
-        return { ok: false, error: `Maximum ${config.maxPurchasePercent} % par achat` };
+        // Rachat express kicks in only when the buy goes past the limit
+        if (state.boughtThisTurn - RACHAT_BONUS + total > config.maxPurchasePercent || !spendAtout(cur, "rachat")) {
+          return { ok: false, error: `Maximum ${config.maxPurchasePercent} % par achat` };
+        }
+        state.boughtThisTurn -= RACHAT_BONUS;
+        state.log.push(`${cur.name} utilise Rachat express : +${RACHAT_BONUS} % d'achat ce tour`);
       }
       const stock = availableStock(state, cur);
       let cost = 0;
@@ -637,12 +642,6 @@ export function applyAction(prev: GameState, action: Action): Result {
     }
 
     case "USE_ATOUT": {
-      if ((action.atout ?? "bouclier") === "rachat") {
-        if (!isCurrent || state.phase !== "act" || !spendAtout(cur, "rachat")) return { ok: false, error: "Atout inutilisable maintenant" };
-        state.boughtThisTurn -= RACHAT_BONUS;
-        state.log.push(`${cur.name} utilise Rachat express : +${RACHAT_BONUS} % d'achat ce tour`);
-        return { ok: true, state };
-      }
       const a = state.auction;
       const seller = a?.sellerId ? player(state, a.sellerId) : undefined;
       if (state.phase !== "auction" || !a || !seller || seller.id !== action.playerId) return { ok: false, error: "Atout inutilisable maintenant" };

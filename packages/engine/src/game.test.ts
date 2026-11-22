@@ -439,7 +439,7 @@ describe("auctions", () => {
     return at(g, "encheres-1");
   }
 
-  it("the lander picks an opponent's company; dice x 5 % go to the highest bidder, the owner is paid", () => {
+  it("the lander picks an opponent's company; up to 5 % go to the highest bidder, the owner is paid", () => {
     let g = auction();
     expect(g.phase).toBe("auction");
     const toSell = g.auction!.percentToSell;
@@ -489,11 +489,11 @@ describe("auctions", () => {
     expect(g.auction!.percent).toBe(1);
   });
 
-  it("never puts more than 15 % up for auction", () => {
-    for (let seed = 1; seed <= 30; seed++) {
+  it("always puts at most 5 % up for auction", () => {
+    for (let seed = 1; seed <= 10; seed++) {
       const g = createGame(P, seed);
       g.players[1]!.holdings = { appel: 50 };
-      expect(at(g, "encheres-1").auction!.percentToSell).toBeLessThanOrEqual(config.auctionMaxPercent);
+      expect(at(g, "encheres-1").auction!.percentToSell).toBe(5);
     }
   });
 

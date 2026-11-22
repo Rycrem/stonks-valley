@@ -482,13 +482,11 @@ function landOn(state: GameState, p: Player, pips: number): void {
         state.log.push("Enchères : aucun adversaire n'a d'actions à mettre en vente");
         break;
       }
-      const [die, next] = rollDie(state.seed);
-      state.seed = next;
       state.phase = "auction";
       state.auction = {
         chooserId: p.id,
         sellerId: null,
-        percentToSell: Math.min(die * config.auctionPercentPerPip, config.auctionMaxPercent),
+        percentToSell: config.auctionMaxPercent,
         company: null,
         percent: 0,
         startPrice: 0,

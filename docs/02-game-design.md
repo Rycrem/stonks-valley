@@ -117,7 +117,7 @@ Sur une case Atout, une carte est tirée au hasard et le joueur peut la prendre 
 - **Bouclier anti-OPA** : annule la prochaine enchère forcée sur ses actions.
 - **Exonération** : la prochaine redevance à payer est offerte (utilisée automatiquement).
 - **Dividende exceptionnel** : la prochaine redevance touchée est doublée par la banque (automatique).
-- **Rachat express** : à jouer pendant son tour, +15 % d'achat autorisé ce tour-ci.
+- **Rachat express** : se déclenche automatiquement quand son détenteur achète plus de 30 % dans un tour : +15 % d'achat autorisé ce tour-ci. En dessous de 30 %, la carte est gardée.
 
 ## Argent
 

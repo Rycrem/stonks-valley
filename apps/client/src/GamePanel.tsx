@@ -1,4 +1,4 @@
-import { activePlayers, allianceOf, atoutById, board, buyableStock, buyCost, config, currentPlayer, markets, netWorth, ranking, royaltyFor, royaltyQuote, trendOf, type GameEvent, type GameState } from "@stonks/engine";
+import { activePlayers, allianceOf, atoutById, board, buyableStock, buyCost, config, RACHAT_BONUS, currentPlayer, markets, netWorth, ranking, royaltyFor, royaltyQuote, trendOf, type GameEvent, type GameState } from "@stonks/engine";
 import { useEffect, useState } from "react";
 import { companyById, money, PLAYER_COLORS } from "./format";
 import { AnimatedMoney } from "./Overlay";
@@ -104,9 +104,6 @@ export function GamePanel({ game }: { game: GameState }) {
             <button onClick={() => dispatch({ type: "BUY_ATOUT", playerId: me.id })}>
               Prendre l'Atout {atoutById.get(game.atoutCard ?? "bouclier")!.name} (gratuit)
             </button>
-          )}
-          {me.atouts.includes("rachat") && (
-            <button onClick={() => dispatch({ type: "USE_ATOUT", playerId: me.id, atout: "rachat" })}>Utiliser Rachat express (+15 % d'achat ce tour)</button>
           )}
           <OfferForm game={game} />
           <SellForm game={game} />
@@ -287,7 +284,7 @@ function BuyPanel({ game }: { game: GameState }) {
   const inspect = useStore((s) => s.setInspect);
   const me = currentPlayer(game);
   const stock = buyableStock(game);
-  const left = config.maxPurchasePercent - game.boughtThisTurn;
+  const left = config.maxPurchasePercent - game.boughtThisTurn + (me.atouts.includes("rachat") ? RACHAT_BONUS : 0);
   const [wanted, setWanted] = useState<Record<string, number>>({});
   useEffect(() => setWanted({}), [game.current, game.phase, me.position]);
 
@@ -299,7 +296,7 @@ function BuyPanel({ game }: { game: GameState }) {
   return (
     <div className="card">
       <h3>Acheter des parts</h3>
-      <p className="muted">Encore {left} % achetables ce tour.</p>
+      <p className="muted">Encore {left} % achetables ce tour{me.atouts.includes("rachat") && ` (dont ${RACHAT_BONUS} % de Rachat express, utilisé seulement au-delà de ${config.maxPurchasePercent} %)`}.</p>
       {entries.map(([c, available]) => {
         const company = companyById.get(c)!;
         const allowed = Math.min(available, left - total + (wanted[c] ?? 0));

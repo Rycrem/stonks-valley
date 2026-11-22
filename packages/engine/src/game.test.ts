@@ -158,13 +158,17 @@ describe("buying", () => {
     expect(h.players[1]!.atouts).toEqual([]);
   });
 
-  it("Rachat express allows 15 % more this turn", () => {
-    let g = at(createGame(P, 1), "atout-1");
+  it("Rachat express is spent only when a buy goes past 30 %", () => {
+    let g = createGame(P, 1);
+    g.phase = "act";
+    g.buyScope = { kind: "world" };
+    g.players[0]!.cash = 10_000_000;
     g.players[0]!.atouts = ["rachat"];
-    expect(err(g, { type: "USE_ATOUT", playerId: "b", atout: "rachat" })).toMatch(/inutilisable/);
-    g = ok(g, { type: "USE_ATOUT", playerId: "a", atout: "rachat" });
-    expect(g.boughtThisTurn).toBe(-15);
+    g = ok(g, { type: "BUY", playerId: "a", purchases: { intol: 30 } });
+    expect(g.players[0]!.atouts).toEqual(["rachat"]);
+    g = ok(g, { type: "BUY", playerId: "a", purchases: { appel: 15 } });
     expect(g.players[0]!.atouts).toEqual([]);
+    expect(err(g, { type: "BUY", playerId: "a", purchases: { nvidio: 1 } })).toMatch(/Maximum/);
   });
 
   it("world choice sells any company from every city, from the first lap", () => {

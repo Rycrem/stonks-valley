@@ -106,7 +106,7 @@ En début de partie, chaque joueur lance 2 dés : le plus haut total commence, p
 
 - Le joueur qui tombe sur Enchères choisit **un adversaire et une de ses entreprises** : il choisit combien de % partent aux enchères, **jusqu'à dé x 5 %** de ces parts, plafonné à **15 %** (ex. dé à 2 : de 1 à 10 % ; dé à 3 ou plus : de 1 à 15 %). Si l'adversaire en a moins, tout ce qu'il a de cette entreprise part. Si aucun adversaire n'a de parts, il ne se passe rien.
 - Un écran spécial s'ouvre pour tout le monde. Mise à prix : **75 % du prix d'achat**, surenchère minimum fixe.
-- Tout le monde sauf le vendeur peut enchérir pendant **30 secondes**. La meilleure offre gagne et l'argent va au vendeur.
+- Tout le monde sauf le vendeur peut enchérir pendant **30 secondes**, et chaque enchère rajoute **3 secondes** au chrono. La meilleure offre gagne et l'argent va au vendeur.
 - Aucune offre : la banque rachète à 75 % du prix, et les % retournent dans le stock des villes.
 - Le vendeur peut annuler la vente avec un **Bouclier anti-OPA** (carte Atout).
 

@@ -6,6 +6,7 @@
   "auctionMaxPercent": 15,
   "minBidIncrement": 100,
   "auctionTimeoutSeconds": 30,
+  "auctionBidExtraSeconds": 3,
   "offerTimeoutSeconds": 15,
   "monopolyMultiplier": 2,
   "bankBuybackRatio": 0.75,

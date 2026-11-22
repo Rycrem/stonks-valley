@@ -196,8 +196,10 @@ export class Rooms {
     let seconds = 0;
     let action: Action | null = null;
     if (g.phase === "auction" && g.auction?.company) {
-      key = `auction:${g.auction.sellerId}:${g.auction.company}:${g.events.at(-1)?.id}`;
-      seconds = config.auctionTimeoutSeconds;
+      // each bid adds a few seconds to the time left
+      const lot = `auction:${g.auction.sellerId}:${g.auction.company}:${g.events.at(-1)?.id}:`;
+      key = lot + g.auction.bids.length;
+      seconds = room.timerKey?.startsWith(lot) && room.deadline ? (room.deadline - Date.now()) / 1000 + config.auctionBidExtraSeconds : config.auctionTimeoutSeconds;
       action = { type: "AUCTION_CLOSE" };
     } else if (g.offer) {
       key = `offer:${g.offer.price}:${g.offer.awaiting}`;

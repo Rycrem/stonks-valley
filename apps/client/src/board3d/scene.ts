@@ -1,4 +1,4 @@
-import { allianceOf, board, companies, markets, regions, type Cell, type GameState } from "@stonks/engine";
+import { allianceOf, board, markets, regions, type Cell, type GameState } from "@stonks/engine";
 import type { Look } from "@stonks/shared";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -6,7 +6,7 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { allianceColor, companyById, PLAYER_COLORS } from "../format";
 import { pawnDataUrl } from "../pawn";
-import { campus, ownerGlow, skyscraper, tierOf } from "./buildings";
+import { ownerGlow, stepOf, tower } from "./buildings";
 
 // Outer ring: 4 corners + 11 cells per side; inner raised ring of hubs: 4 corners + 7 per side.
 const W = 1.1, CORNER = 1.6, N = 11;
@@ -608,9 +608,8 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
       if (cell.type !== "city") return;
       const company = companyById.get(game.royalties[cell.id]!)!;
       const pct = biggestHolding(game, company.id);
-      const hub = cell.region === "hubs";
       const holder = topHolderColor(game, company.id);
-      const key = `${company.id}:${pct ? tierOf(pct) : -1}:${holder}`;
+      const key = `${company.id}:${pct ? stepOf(pct) : -1}:${holder}`;
       if (built.get(i) === key) return;
       built.set(i, key);
       const deco = decos[i]!;
@@ -625,11 +624,9 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
         deco.parent!.add(plate);
         deco.userData.logo = true;
       }
-      // each company always gets the same kind of building, wherever its cell is
-      const campusStyle = companies.findIndex((c) => c.id === company.id) % 2 === 1;
       // nobody holds it yet: the lot stays empty
-      const b = !pct ? new THREE.Group() : campusStyle ? campus(tierOf(pct), company.color) : skyscraper(tierOf(pct), company.color);
-      const size = campusStyle ? (hub ? 0.9 : 0.75) : 0.8;
+      const b = !pct ? new THREE.Group() : tower(stepOf(pct), company.color);
+      const size = 0.8;
       if (pct && holder) ownerGlow(b, holder);
       deco.add(b);
       if (first) {

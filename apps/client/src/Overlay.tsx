@@ -258,13 +258,17 @@ function Card({ e, nameOf, colorOf }: { e: GameEvent; nameOf: (id: string) => st
                 <span>{e.dice[1]}</span>
               </div>
             )}
-            <div className={`amount ${e.amount >= 0 ? "plus" : "minus"}`}>
-              {e.amount >= 0 ? "+" : "−"}
-              {money(Math.abs(e.amount))}
-            </div>
-            <div className="sub">
-              Trésorerie : {money(e.before)} → {money(e.after)}
-            </div>
+            {e.amount !== 0 && (
+              <>
+                <div className={`amount ${e.amount >= 0 ? "plus" : "minus"}`}>
+                  {e.amount >= 0 ? "+" : "−"}
+                  {money(Math.abs(e.amount))}
+                </div>
+                <div className="sub">
+                  Trésorerie : {money(e.before)} → {money(e.after)}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

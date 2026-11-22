@@ -116,6 +116,7 @@ describe("rooms", () => {
     owner!.holdings = { nvidio: 10 };
     expect(rooms.act(host.code, buyer!.id, { type: "OFFER", playerId: buyer!.id, ownerId: owner!.id, company: "nvidio", percent: 5, price: 100 }).ok).toBe(true);
     expect(room.deadline).not.toBeNull();
+    expect(rooms.view(room, host.playerId).timeLeftMs).toBe(config.offerTimeoutSeconds * 1000);
     vi.advanceTimersByTime(config.offerTimeoutSeconds * 1000);
     expect(room.game!.offer).toBeNull();
     expect(room.deadline).toBeNull();

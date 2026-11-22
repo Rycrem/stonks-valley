@@ -62,6 +62,8 @@ export interface RoomView {
   game: GameState | null;
   // epoch ms when the running auction or offer times out
   deadline: number | null;
+  // same deadline as time left when sent, so a device with a wrong clock still counts down right
+  timeLeftMs: number | null;
   // points earned by each player at the end of the game
   rewards: Record<string, number> | null;
   // filled only for the admin: dice forced for each player's next roll

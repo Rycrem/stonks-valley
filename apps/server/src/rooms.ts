@@ -352,6 +352,7 @@ export class Rooms {
       players: room.members.map(({ id, name, connected, look }) => ({ id, name, connected, look })),
       game: room.game,
       deadline: room.deadline,
+      timeLeftMs: room.deadline === null ? null : Math.max(0, room.deadline - Date.now()),
       rewards: room.rewards,
       nextDice: this.isAdminMember(room, viewerId) ? room.nextDice : {},
       chat: {

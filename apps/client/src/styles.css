@@ -439,3 +439,9 @@ button.danger { background: #ef476f; color: #fff; border-color: #ef476f; }
 .chat-big { font-size: 26px; vertical-align: middle; }
 .chip.leader { box-shadow: 0 0 0 2px #e0b23a; }
 .chip.monopoly { box-shadow: 0 0 0 3px #ffcf4a, 0 0 12px #ffcf4acc; }
+
+.dice-admin { position: absolute; left: 16px; bottom: 16px; z-index: 30; max-height: calc(100% - 32px); overflow-y: auto; background: var(--panel); border: 1px solid #e8b93a; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.dice-admin .row { display: flex; align-items: center; gap: 6px; }
+.dice-admin .row button { min-width: 32px; }
+.dice-admin .dice-player { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.dice-admin .dice-player > button { align-self: flex-start; }

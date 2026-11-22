@@ -97,6 +97,10 @@ io.on("connection", (socket) => {
     if (!session) return ack({ ok: false, error: "Pas dans une partie" });
     ack(rooms.act(session.code, session.playerId, action));
   });
+  socket.on("admin:dice", (target, dice, ack) => {
+    if (!session) return ack({ ok: false, error: "Pas dans une partie" });
+    ack(rooms.setDice(session.code, session.playerId, String(target ?? ""), Array.isArray(dice) ? [Number(dice[0]), Number(dice[1])] : null));
+  });
 
   socket.on("chat:send", (channel, text, ack) => {
     if (!session) return ack({ ok: false, error: "Pas dans une partie" });

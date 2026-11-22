@@ -21,6 +21,8 @@ export interface Room {
   messages: ChatMessage[];
   groups: ChatGroup[];
   nextChatId: number;
+  // admin only: dice forced for the next roll of each player
+  nextDice: Record<string, [number, number]>;
 }
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -77,7 +79,7 @@ export class Rooms {
 
   create(name: string, profileToken: string): Result<Session> {
     if (!name.trim()) return { ok: false, error: "Pseudo requis" };
-    const room: Room = { code: this.newCode(), hostId: "p1", members: [], game: null, timer: null, timerKey: null, deadline: null, rewards: null, messages: [], groups: [], nextChatId: 1 };
+    const room: Room = { code: this.newCode(), hostId: "p1", members: [], game: null, timer: null, timerKey: null, deadline: null, rewards: null, messages: [], groups: [], nextChatId: 1, nextDice: {} };
     this.rooms.set(room.code, room);
     return { ok: true, data: this.addMember(room, name, profileToken) };
   }
@@ -166,6 +168,7 @@ export class Rooms {
     const room = this.get(code);
     if (!room?.game) return { ok: false, error: "Aucune partie en cours" };
     if (room.members.find((m) => m.id === playerId)?.kicked) return { ok: false, error: "Tu as été exclu de la partie" };
+    if (action.type === "ROLL" && action.dice) return { ok: false, error: "Action réservée" };
     if ((SYSTEM_ACTIONS as readonly string[]).includes(action.type)) {
       if (action.type !== "END_GAME" || room.hostId !== playerId || room.game.mode !== "chrono") {
         return { ok: false, error: "Action réservée" };
@@ -176,8 +179,27 @@ export class Rooms {
     return this.apply(room, action);
   }
 
+  setDice(code: string, adminId: string, target: string, dice: [number, number] | null): Result<null> {
+    const room = this.get(code);
+    if (!room?.game || !this.isAdminMember(room, adminId)) return { ok: false, error: "Réservé à l'admin" };
+    if (!room.game.players.some((p) => p.id === target)) return { ok: false, error: "Joueur inconnu" };
+    if (dice && !dice.every((d) => Number.isInteger(d) && d >= 1 && d <= 6)) return { ok: false, error: "Dés invalides" };
+    if (dice) room.nextDice[target] = dice;
+    else delete room.nextDice[target];
+    this.onChange(room);
+    return { ok: true, data: null };
+  }
+
+  private isAdminMember(room: Room, id: string): boolean {
+    const member = room.members.find((m) => m.id === id);
+    return !!member && this.profiles.isAdminToken(member.profileToken);
+  }
+
   private apply(room: Room, action: Action): Result<null> {
+    const forced = action.type === "ROLL" && !action.dice ? room.nextDice[action.playerId] : undefined;
+    if (forced && action.type === "ROLL") action = { ...action, dice: forced };
     const r = applyAction(room.game!, action);
+    if (forced && r.ok && action.type === "ROLL") delete room.nextDice[action.playerId];
     if (!r.ok) return { ok: false, error: r.error };
     room.game = r.state;
     this.syncAllianceGroups(room);
@@ -329,6 +351,7 @@ export class Rooms {
       game: room.game,
       deadline: room.deadline,
       rewards: room.rewards,
+      nextDice: this.isAdminMember(room, viewerId) ? room.nextDice : {},
       chat: {
         messages: room.messages.filter((m) => this.canRead(room, viewerId, m.channel)),
         groups: room.groups.filter((g) => g.members.includes(viewerId)),

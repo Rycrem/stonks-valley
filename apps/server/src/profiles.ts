@@ -83,6 +83,10 @@ export class Profiles {
     };
   }
 
+  isAdminToken(token: string): boolean {
+    return this.isAdmin(this.profiles.get(token));
+  }
+
   private isAdmin(p: Profile | undefined): boolean {
     return !!p?.account && key(p.account) === key(this.admin.name);
   }

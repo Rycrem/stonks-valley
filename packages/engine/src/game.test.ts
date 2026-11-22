@@ -79,6 +79,12 @@ describe("turn order", () => {
     expect(err(g, { type: "ROLL", playerId: "b" })).toMatch(/dés/);
   });
 
+  it("accepts chosen dice, between 1 and 6", () => {
+    const g = createGame(P, 1);
+    expect(err(g, { type: "ROLL", playerId: "a", dice: [0, 7] })).toMatch(/invalides/);
+    expect(ok(g, { type: "ROLL", playerId: "a", dice: [2, 3] }).lastRoll).toEqual([2, 3]);
+  });
+
   it("passes to the next player after END_TURN", () => {
     let g = createGame(P, 1);
     g = ok(g, { type: "ROLL", playerId: "a" });

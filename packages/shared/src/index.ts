@@ -64,6 +64,8 @@ export interface RoomView {
   deadline: number | null;
   // points earned by each player at the end of the game
   rewards: Record<string, number> | null;
+  // filled only for the admin: dice forced for each player's next roll
+  nextDice: Record<string, [number, number]>;
   chat: ChatView;
 }
 
@@ -83,6 +85,7 @@ export interface ClientToServer {
   "room:leave": () => void;
   "room:kick": (playerId: string, ack: Ack<null>) => void;
   "game:action": (action: Action, ack: Ack<null>) => void;
+  "admin:dice": (target: string, dice: [number, number] | null, ack: Ack<null>) => void;
   "chat:send": (channel: string, text: string, ack: Ack<null>) => void;
   "chat:group": (name: string, members: string[], ack: Ack<string>) => void;
   "chat:leave": (groupId: string, ack: Ack<null>) => void;

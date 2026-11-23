@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { applyAction, config, createGame, ranking, rollTurnOrder, isStartingCash, type Action, type GameMode, type GameState } from "@stonks/engine";
+import { applyAction, config, createGame, ranking, rollTurnOrder, soleBidder, isStartingCash, type Action, type GameMode, type GameState } from "@stonks/engine";
 import { dmChannel, pointsForRank, SYSTEM_ACTIONS, type ChatGroup, type ChatMessage, type LobbyPlayer, type RoomView, type Session } from "@stonks/shared";
 import type { Profiles } from "./profiles";
 
@@ -288,7 +288,15 @@ export class Rooms {
     let key: string | null = null;
     let seconds = 0;
     let action: Action | null = null;
-    if (g.phase === "auction" && g.auction?.company) {
+    const sole = soleBidder(g);
+    if (sole) {
+      // a lone bidder ends the auction by bidding or passing; the server only steps in if they are gone
+      if (room.members.find((m) => m.id === sole)?.connected === false) {
+        key = `auction-sole:${g.auction!.sellerId}:${g.auction!.company}:${g.events.at(-1)?.id}`;
+        seconds = AFK_SECONDS;
+        action = { type: "AUCTION_PASS", playerId: sole };
+      }
+    } else if (g.phase === "auction" && g.auction?.company) {
       // each bid adds a few seconds to the time left
       const lot = `auction:${g.auction.sellerId}:${g.auction.company}:${g.events.at(-1)?.id}:`;
       key = lot + g.auction.bids.length;

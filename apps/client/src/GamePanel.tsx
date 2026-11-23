@@ -80,11 +80,6 @@ export function GamePanel({ game }: { game: GameState }) {
         </div>
       )}
 
-      {game.phase === "roll" && myTurn && (
-        <button className="primary roll-btn" onClick={() => dispatch({ type: "ROLL", playerId: me.id })}>
-          Lancer les dés
-        </button>
-      )}
       {!myTurn && game.phase !== "auction" && !game.offer && <p className="muted">En attente de {me.name}...</p>}
 
       {game.phase !== "roll" && (
@@ -100,11 +95,6 @@ export function GamePanel({ game }: { game: GameState }) {
       {game.phase === "act" && !game.offer && myTurn && (
         <>
           {game.buyScope && <BuyPanel game={game} />}
-          {game.canBuyAtout && (
-            <button onClick={() => dispatch({ type: "BUY_ATOUT", playerId: me.id })}>
-              Prendre l'Atout {atoutById.get(game.atoutCard ?? "bouclier")!.name} (gratuit)
-            </button>
-          )}
           <OfferForm game={game} />
           <SellForm game={game} />
           <button className="primary" onClick={() => dispatch({ type: "END_TURN", playerId: me.id })}>
@@ -219,24 +209,28 @@ function Players({ game, colorOf }: { game: GameState; colorOf: (id: string) => 
             {offline.has(p.id) && !p.bankrupt && <span className="offline">déconnecté</span>}
             {allianceOf(game, p.id) && <span className="chip alliance" style={{ background: allianceColor(allianceOf(game, p.id)!.id), color: "#1b2433", textShadow: "none" }}>Alliance {allianceOf(game, p.id)!.id.slice(1)}</span>}
             {sent.includes(p.id) && <small className="muted">invité</small>}
-            {canInvite(p.id) && (
-              <button className="ally-btn" title="Proposer une alliance" onClick={() => dispatch({ type: "ALLIANCE_INVITE", playerId: you!, targetId: p.id })}>
-                Alliance ?
-              </button>
-            )}
-            {canLend(p.id) && (
-              <button className="ally-btn" title="Prêter de l'argent" onClick={() => setLendTo(lendTo === p.id ? null : p.id)}>
-                Prêter
-              </button>
-            )}
-            {canKick(p.id) && (
-              <button className="ally-btn kick-btn" title="Exclure ce joueur" onClick={() => confirm(`Exclure ${p.name} de la partie ? Ses parts retournent à la banque.`) && kick(p.id)}>
-                Exclure
-              </button>
-            )}
             <span className="spacer" />
             {p.bankrupt ? (game.eliminated.includes(p.id) && game.log.includes(`${p.name} est exclu de la partie`) ? "exclu" : "en faillite") : <AnimatedMoney value={p.cash} />}
           </div>
+          {(canInvite(p.id) || canLend(p.id) || canKick(p.id)) && (
+            <div className="row player-actions">
+              {canInvite(p.id) && (
+                <button className="ally-btn" title="Proposer une alliance" onClick={() => dispatch({ type: "ALLIANCE_INVITE", playerId: you!, targetId: p.id })}>
+                  Alliance ?
+                </button>
+              )}
+              {canLend(p.id) && (
+                <button className="ally-btn" title="Prêter de l'argent" onClick={() => setLendTo(lendTo === p.id ? null : p.id)}>
+                  Prêter
+                </button>
+              )}
+              {canKick(p.id) && (
+                <button className="ally-btn kick-btn" title="Exclure ce joueur" onClick={() => confirm(`Exclure ${p.name} de la partie ? Ses parts retournent à la banque.`) && kick(p.id)}>
+                  Exclure
+                </button>
+              )}
+            </div>
+          )}
           <div className="chips">
             {Object.entries(p.holdings)
               .sort((a, b) => b[1] - a[1])

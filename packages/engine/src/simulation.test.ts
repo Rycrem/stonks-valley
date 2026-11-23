@@ -24,7 +24,7 @@ function botTurn(state: GameState): GameState {
     else {
       const bidder = activePlayers(g).find((p) => p.id !== target.id && p.cash > g.auction!.startPrice * 2);
       if (bidder) g = step(g, { type: "BID", playerId: bidder.id, amount: g.auction!.startPrice });
-      g = step(g, { type: "AUCTION_CLOSE" });
+      if (g.phase === "auction") g = step(g, { type: "AUCTION_CLOSE" });
     }
   }
   if (currentPlayer(g).cash < 0) {
@@ -42,7 +42,6 @@ function botTurn(state: GameState): GameState {
     g = step(g, { type: "BUY", playerId: self.id, purchases: { [company]: pct } });
     budget -= pct;
   }
-  if (g.canBuyAtout) g = step(g, { type: "BUY_ATOUT", playerId: self.id });
   // bots ally with the poorest outsider, accept every invite, and leave alliances now and then
   const outsider = activePlayers(g).filter((p) => p.id !== self.id && !g.alliances.some((a) => a.members.includes(p.id))).sort((x, y) => x.cash - y.cash)[0];
   if (outsider && g.log.length % 7 === 0) {

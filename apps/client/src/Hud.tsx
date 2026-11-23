@@ -1,7 +1,7 @@
 import { currentPlayer, type GameState } from "@stonks/engine";
 import { useEffect, useState } from "react";
 import { PLAYER_COLORS } from "./format";
-import { AnimatedMoney } from "./Overlay";
+import { AnimatedMoney, PIPS } from "./Overlay";
 import { useStore } from "./store";
 
 // My cash in the top right corner of the board; on a shared screen, the cash of whoever plays
@@ -25,7 +25,8 @@ export function TurnBanner({ game }: { game: GameState }) {
   const p = currentPlayer(game);
   const [shown, setShown] = useState<string | null>(null);
   useEffect(() => {
-    if (game.phase !== "roll") return;
+    // the dice are thrown: the banner gives way to the roll
+    if (game.phase !== "roll") return setShown(null);
     setShown(p.id);
     const t = setTimeout(() => setShown(null), 2400);
     return () => clearTimeout(t);
@@ -47,5 +48,55 @@ export function TurnBanner({ game }: { game: GameState }) {
         </div>
       </div>
     </div>
+  );
+}
+
+const FLICK = 40;
+
+// The dice wait in the middle of the board on my turn: a tap or a flick upwards throws them
+export function DiceLauncher({ game }: { game: GameState }) {
+  const { you, bots, dispatch, error } = useStore();
+  const [drag, setDrag] = useState<{ id: number; y: number; dy: number } | null>(null);
+  const [thrown, setThrown] = useState(false);
+  const p = currentPlayer(game);
+  const mine = game.phase === "roll" && (you === null ? !bots.includes(p.id) : you === p.id);
+  useEffect(() => setThrown(false), [game.lastRoll, p.id, error]);
+  if (!mine || thrown) return null;
+  const roll = () => {
+    setThrown(true);
+    dispatch({ type: "ROLL", playerId: p.id });
+  };
+  const dy = drag ? Math.min(0, drag.dy) : 0;
+  return (
+    <button
+      className={`dice-launcher ${drag ? "dragging" : ""}`}
+      style={{ "--dy": `${Math.max(-120, dy)}px` } as React.CSSProperties}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setDrag({ id: e.pointerId, y: e.clientY, dy: 0 });
+      }}
+      onPointerMove={(e) => drag?.id === e.pointerId && setDrag({ ...drag, dy: e.clientY - drag.y })}
+      onPointerUp={(e) => {
+        if (!drag || drag.id !== e.pointerId) return;
+        const moved = e.clientY - drag.y;
+        setDrag(null);
+        // a tap or a flick upwards; dragging down cancels
+        if (moved <= -FLICK || Math.abs(moved) < 10) roll();
+      }}
+      onPointerCancel={() => setDrag(null)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), roll())}
+    >
+      <span className="dice-pair">
+        {[5, 3].map((v, k) => (
+          <span key={k} className="big-die small">
+            {PIPS[v]!.map(([x, y], i) => (
+              <i key={i} style={{ left: `${x}%`, top: `${y}%` }} />
+            ))}
+          </span>
+        ))}
+      </span>
+      <strong>Lancer les dés</strong>
+      <small>Touche ou glisse vers le haut</small>
+    </button>
   );
 }

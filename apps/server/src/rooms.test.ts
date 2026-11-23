@@ -128,6 +128,7 @@ describe("rooms", () => {
   it("adds a few seconds to the auction timer on each bid", () => {
     vi.useFakeTimers();
     const { rooms, host } = setup();
+    rooms.join(host.code, "Chloé", "tok-c");
     rooms.start(host.code, host.playerId, "classique");
     const room = rooms.get(host.code)!;
     const [bidder, seller] = room.game!.players;
@@ -143,6 +144,24 @@ describe("rooms", () => {
     expect(room.game!.phase).toBe("auction");
     vi.advanceTimersByTime(config.auctionBidExtraSeconds * 1000);
     expect(room.game!.phase).not.toBe("auction");
+  });
+
+  it("no auction timer with a single possible bidder: their bid or pass ends it", () => {
+    vi.useFakeTimers();
+    const { rooms, host } = setup();
+    rooms.start(host.code, host.playerId, "classique");
+    const room = rooms.get(host.code)!;
+    const [bidder, seller] = room.game!.players;
+    seller!.holdings = { nvidio: 10 };
+    room.game!.phase = "auction";
+    room.game!.auction = { chooserId: bidder!.id, sellerId: seller!.id, percentToSell: 5, company: "nvidio", percent: 5, startPrice: 100, highestBid: 0, highestBidderId: null, bids: [] };
+    rooms.setConnected(host.code, seller!.id, true);
+    expect(room.deadline).toBeNull();
+    vi.advanceTimersByTime(config.auctionTimeoutSeconds * 2000);
+    expect(room.game!.phase).toBe("auction");
+    expect(rooms.act(host.code, bidder!.id, { type: "AUCTION_PASS", playerId: bidder!.id }).ok).toBe(true);
+    expect(room.game!.phase).not.toBe("auction");
+    expect(room.game!.events.at(-1)).toMatchObject({ kind: "auction", winnerId: null });
   });
 
   it("plays automatically for a disconnected player after a delay", () => {

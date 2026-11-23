@@ -1,8 +1,11 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { config } from "@stonks/engine";
 import { cosmeticById, pointsForRank } from "@stonks/shared";
 import { Profiles } from "./profiles";
-import { AFK_SECONDS, Rooms, type Room } from "./rooms";
+import { AFK_SECONDS, Rooms, SAVE_HOURS, type Room } from "./rooms";
 
 function setup() {
   const changes: Room[] = [];
@@ -235,5 +238,67 @@ describe("chat", () => {
     s.rooms.act(s.code, "p2", { type: "ALLIANCE_LEAVE", playerId: "p2" });
     expect(s.rooms.view(s.room, "p1").chat.groups).toEqual([]);
     expect(texts(s, "p1")).not.toContain("secret");
+  });
+});
+
+describe("saved games", () => {
+  function saved() {
+    const dir = mkdtempSync(join(tmpdir(), "stonks-"));
+    const profiles = new Profiles(null);
+    const rooms = new Rooms(profiles, () => {}, dir);
+    const host = rooms.create("Alice", "tok-a");
+    if (!host.ok) throw new Error();
+    const guest = rooms.join(host.data.code, "Bob", "tok-b");
+    if (!guest.ok) throw new Error();
+    rooms.start(host.data.code, "p1", "classique");
+    return { dir, profiles, rooms, code: host.data.code, host: host.data, guest: guest.data };
+  }
+
+  it("a game in progress survives a server restart and players rejoin with their token", () => {
+    const s = saved();
+    const first = s.rooms.get(s.code)!.game!.players[0]!.id;
+    s.rooms.act(s.code, first, { type: "ROLL", playerId: first });
+    const game = s.rooms.get(s.code)!.game;
+    const restarted = new Rooms(s.profiles, () => {}, s.dir);
+    const room = restarted.get(s.code)!;
+    expect(room.game).toEqual(game);
+    expect(room.members.every((m) => !m.connected)).toBe(true);
+    expect(restarted.rejoin(s.code, s.guest.token)).toMatchObject({ ok: true, data: { playerId: "p2" } });
+    expect(restarted.rejoin(s.code, s.host.token).ok).toBe(true);
+  });
+
+  it("a game everyone left is paused: no turn is played until players come back", () => {
+    vi.useFakeTimers();
+    const s = saved();
+    s.rooms.setConnected(s.code, "p1", false);
+    s.rooms.setConnected(s.code, "p2", false);
+    const room = s.rooms.get(s.code)!;
+    vi.advanceTimersByTime(AFK_SECONDS * 5000);
+    expect(room.game!.lastRoll).toBeNull();
+    // the first player back does not see the other's turns played while they are still away
+    room.game!.current = room.game!.players.findIndex((p) => p.id === "p2");
+    s.rooms.rejoin(s.code, s.host.token);
+    vi.advanceTimersByTime(AFK_SECONDS * 5000);
+    expect(room.game!.lastRoll).toBeNull();
+  });
+
+  it("a saved game nobody came back to is dropped after 24 h", () => {
+    vi.useFakeTimers();
+    const s = saved();
+    s.rooms.setConnected(s.code, "p1", false);
+    s.rooms.setConnected(s.code, "p2", false);
+    vi.advanceTimersByTime((SAVE_HOURS - 1) * 3600 * 1000);
+    expect(new Rooms(s.profiles, () => {}, s.dir).get(s.code)).toBeDefined();
+    vi.advanceTimersByTime(2 * 3600 * 1000);
+    expect(s.rooms.get(s.code)).toBeUndefined();
+    expect(new Rooms(s.profiles, () => {}, s.dir).get(s.code)).toBeUndefined();
+  });
+
+  it("without a data dir a game everyone left is removed", () => {
+    const { rooms, host, guest } = setup();
+    rooms.start(host.code, host.playerId, "classique");
+    rooms.setConnected(host.code, host.playerId, false);
+    rooms.setConnected(host.code, guest.playerId, false);
+    expect(rooms.get(host.code)).toBeUndefined();
   });
 });

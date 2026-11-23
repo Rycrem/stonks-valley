@@ -38,14 +38,20 @@ const http = createServer(async (req, res) => {
 });
 
 const io = new Server<ClientToServer, ServerToClient>(http, { cors: { origin: true } });
-const profiles = new Profiles(process.env.DATA_DIR ?? fileURLToPath(new URL("../data", import.meta.url)), {
+const DATA_DIR = process.env.DATA_DIR ?? fileURLToPath(new URL("../data", import.meta.url));
+const profiles = new Profiles(DATA_DIR, {
   name: process.env.ADMIN_USER ?? "Rycrem",
   password: process.env.ADMIN_PASSWORD,
 });
 // each player gets their own view (private messages and groups are filtered)
-const rooms = new Rooms(profiles, (room) => {
-  for (const m of room.members) io.to(`${room.code}:${m.id}`).emit("room:state", rooms.view(room, m.id));
-});
+// SAVE_GAMES=0 turns off saving games in progress across restarts and pauses
+const rooms = new Rooms(
+  profiles,
+  (room) => {
+    for (const m of room.members) io.to(`${room.code}:${m.id}`).emit("room:state", rooms.view(room, m.id));
+  },
+  process.env.SAVE_GAMES === "0" ? null : DATA_DIR,
+);
 
 io.on("connection", (socket) => {
   let session: { code: string; playerId: string } | null = null;

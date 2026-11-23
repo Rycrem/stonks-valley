@@ -1,4 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { applyAction, config, createGame, ranking, rollTurnOrder, isStartingCash, type Action, type GameMode, type GameState } from "@stonks/engine";
 import { dmChannel, pointsForRank, SYSTEM_ACTIONS, type ChatGroup, type ChatMessage, type LobbyPlayer, type RoomView, type Session } from "@stonks/shared";
 import type { Profiles } from "./profiles";
@@ -7,6 +9,8 @@ interface Member extends LobbyPlayer {
   token: string;
   profileToken: string;
   kicked?: boolean;
+  // not back yet since the game was paused or the server restarted: their turns wait for them
+  away?: boolean;
 }
 
 export interface Room {
@@ -23,6 +27,8 @@ export interface Room {
   nextChatId: number;
   // admin only: dice forced for the next roll of each player
   nextDice: Record<string, [number, number]>;
+  // a saved game that everyone left, kept until SAVE_HOURS after this time
+  emptySince?: number | null;
 }
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -31,12 +37,14 @@ const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const AFK_SECONDS = 20;
 const MAX_MESSAGES = 300;
 const MAX_TEXT = 300;
+export const SAVE_HOURS = 24;
 
 // What the server plays for a disconnected player whose turn it is
 function afkAction(room: Room): Action | null {
   const g = room.game!;
   const actorId = g.phase === "auction" && g.auction && !g.auction.company ? g.auction.chooserId : g.players[g.current]!.id;
-  if (room.members.find((m) => m.id === actorId)?.connected !== false) return null;
+  const member = room.members.find((m) => m.id === actorId);
+  if (member?.connected !== false || member.away) return null;
   const actor = g.players.find((p) => p.id === actorId)!;
   if (g.phase === "roll") return { type: "ROLL", playerId: actorId };
   if (g.phase === "act") return actor.cash < 0 ? { type: "SETTLE_DEBT", playerId: actorId } : { type: "END_TURN", playerId: actorId };
@@ -50,11 +58,57 @@ function afkAction(room: Room): Action | null {
 
 export class Rooms {
   private rooms = new Map<string, Room>();
+  private file: string | null;
+  private onChange: (room: Room) => void;
 
+  // with a data dir, games in progress are saved there and survive a restart or a pause for SAVE_HOURS
   constructor(
     private profiles: Profiles,
-    private onChange: (room: Room) => void,
-  ) {}
+    onChange: (room: Room) => void,
+    dir: string | null = null,
+  ) {
+    this.file = dir ? join(dir, "games.json") : null;
+    this.onChange = (room) => {
+      onChange(room);
+      this.save();
+    };
+    if (!dir) return;
+    mkdirSync(dir, { recursive: true });
+    try {
+      const saved = JSON.parse(readFileSync(this.file!, "utf8")) as { savedAt: number; rooms: Room[] };
+      for (const room of saved.rooms) {
+        room.timer = null;
+        room.timerKey = null;
+        room.deadline = null;
+        room.emptySince ??= saved.savedAt;
+        for (const m of room.members) {
+          if (!m.kicked) m.away = true;
+          m.connected = false;
+        }
+        this.rooms.set(room.code, room);
+      }
+    } catch {
+      // first start: no file yet
+    }
+    this.expire();
+    setInterval(() => this.expire(), 10 * 60 * 1000).unref();
+  }
+
+  private save(): void {
+    if (!this.file) return;
+    const rooms = [...this.rooms.values()].filter((r) => r.game).map(({ timer, ...r }) => r);
+    const tmp = `${this.file}.tmp`;
+    writeFileSync(tmp, JSON.stringify({ savedAt: Date.now(), rooms }));
+    renameSync(tmp, this.file);
+  }
+
+  // Saved games nobody came back to are dropped after SAVE_HOURS
+  expire(): void {
+    const limit = Date.now() - SAVE_HOURS * 3600 * 1000;
+    const old = [...this.rooms.values()].filter((r) => r.emptySince && r.emptySince < limit);
+    for (const room of old) this.remove(room);
+    if (old.length) this.save();
+  }
 
   get(code: string): Room | undefined {
     return this.rooms.get(code.toUpperCase());
@@ -100,6 +154,8 @@ export class Rooms {
     const member = room?.members.find((m) => m.token === token);
     if (!room || !member || member.kicked) return { ok: false, error: "Session expirée" };
     member.connected = true;
+    member.away = false;
+    room.emptySince = null;
     if (room.game) this.schedule(room);
     this.onChange(room);
     return { ok: true, data: { code: room.code, playerId: member.id, token } };
@@ -115,7 +171,15 @@ export class Rooms {
       if (room.members.length === 0) return this.remove(room);
       if (room.hostId === playerId) room.hostId = room.members[0]!.id;
     }
-    if (room.game && room.members.every((m) => !m.connected)) return this.remove(room);
+    if (room.game && room.members.every((m) => !m.connected)) {
+      if (!this.file || room.game.phase === "gameOver") {
+        this.remove(room);
+        return this.save();
+      }
+      // everyone left: the game is paused and kept for SAVE_HOURS
+      room.emptySince = Date.now();
+      for (const m of room.members) if (!m.kicked) m.away = true;
+    }
     if (room.game) this.schedule(room);
     this.onChange(room);
   }
@@ -214,6 +278,13 @@ export class Rooms {
   private schedule(room: Room): void {
     if (!room.game) return;
     const g = room.game!;
+    if (room.members.every((m) => !m.connected)) {
+      if (room.timer) clearTimeout(room.timer);
+      room.timer = null;
+      room.timerKey = null;
+      room.deadline = null;
+      return;
+    }
     let key: string | null = null;
     let seconds = 0;
     let action: Action | null = null;

@@ -385,3 +385,4 @@
 [data-variant="noir"][data-theme="pop"] .setup .logo { border-color: #f4f4f8; box-shadow: 6px 6px 0 #ef476f; color: #0e0e14; }
 [data-variant="noir"][data-theme="pop"] :is(.code, .points, .theme-choice) { border-color: #f4f4f8; }
 [data-variant="noir"][data-theme="pop"] :is(.event-card .sub, .overlay-slot .who, .hover-tip small) { color: #c9c9da; }
+[data-theme] .board-wrap button.dice-launcher { border-radius: 12px; min-width: 260px; padding: 14px 36px 12px; }

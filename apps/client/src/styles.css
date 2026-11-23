@@ -470,7 +470,7 @@ button.danger { background: #ef476f; color: #fff; border-color: #ef476f; }
 .worth-legend i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 
 /* the dice wait in the middle of the board: tap them or flick them upwards */
-.dice-launcher { position: absolute; left: 50%; top: 52%; z-index: 19; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 26px 12px; border-radius: 22px; border: 1px solid #ffffff33; background: #0d1422cc; backdrop-filter: blur(10px); color: #fff; cursor: grab; touch-action: none; user-select: none; transform: translate(-50%, calc(-50% + var(--dy, 0px))); animation: launcher-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards; box-shadow: 0 10px 30px #0008; }
+.dice-launcher { position: absolute; left: 50%; top: 52%; z-index: 21; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 36px 12px; min-width: 240px; border-radius: 10px; border: 1px solid #ffffff33; background: #0d1422cc; backdrop-filter: blur(10px); color: #fff; cursor: grab; touch-action: none; user-select: none; transform: translate(-50%, calc(-50% + var(--dy, 0px))); animation: launcher-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards; box-shadow: 0 10px 30px #0008; }
 .dice-launcher.dragging { cursor: grabbing; transition: none; }
 .dice-launcher:not(.dragging) { transition: transform 0.2s ease-out; }
 .dice-launcher strong { font-size: 16px; }

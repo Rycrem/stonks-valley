@@ -16,6 +16,7 @@ export type Action =
   | { type: "USE_ATOUT"; playerId: PlayerId; atout?: string }
   | { type: "BID"; playerId: PlayerId; amount: number }
   | { type: "AUCTION_CLOSE" }
+  | { type: "AUCTION_PASS"; playerId: PlayerId }
   | { type: "END_TURN"; playerId: PlayerId }
   | { type: "ALLIANCE_INVITE"; playerId: PlayerId; targetId: PlayerId }
   | { type: "ALLIANCE_ANSWER"; playerId: PlayerId; fromId: PlayerId; accept: boolean }
@@ -235,6 +236,37 @@ function shuffle<T>(arr: T[], seed: number): [number] {
     [arr[i], arr[j]] = [arr[j]!, arr[i]!];
   }
   return [s];
+}
+
+// With a single possible bidder there is no race: the auction ends on their bid or pass, without a timer
+export function soleBidder(state: GameState): PlayerId | null {
+  const a = state.auction;
+  if (!a?.company) return null;
+  const bidders = activePlayers(state).filter((p) => p.id !== a.sellerId);
+  return bidders.length === 1 ? bidders[0]!.id : null;
+}
+
+function closeAuction(state: GameState): void {
+  const a = state.auction!;
+  if (!a.company || !a.sellerId) return;
+  const seller = player(state, a.sellerId)!;
+  // the seller may have sold to the bank meanwhile
+  const percent = Math.min(a.percent, seller.holdings[a.company] ?? 0);
+  const winner = a.highestBidderId ? player(state, a.highestBidderId)! : null;
+  removeHolding(seller, a.company, percent);
+  if (winner && winner.cash >= a.highestBid) {
+    winner.cash -= a.highestBid;
+    seller.cash += a.highestBid;
+    winner.holdings[a.company] = (winner.holdings[a.company] ?? 0) + percent;
+    emit(state, { kind: "auction", playerId: a.chooserId, sellerId: seller.id, company: a.company, percent, price: a.highestBid, winnerId: winner.id, cancelled: false });
+  } else {
+    const price = bankPrice(a.company, percent);
+    seller.cash += price;
+    returnToStock(state, a.company, percent);
+    emit(state, { kind: "auction", playerId: a.chooserId, sellerId: seller.id, company: a.company, percent, price, winnerId: null, cancelled: false });
+  }
+  state.auction = null;
+  state.phase = "act";
 }
 
 export function activePlayers(state: GameState): Player[] {
@@ -747,30 +779,20 @@ export function applyAction(prev: GameState, action: Action): Result {
       a.highestBid = action.amount;
       a.highestBidderId = bidder.id;
       a.bids.push({ playerId: bidder.id, amount: action.amount });
+      if (soleBidder(state) === bidder.id) closeAuction(state);
       return { ok: true, state };
     }
 
     case "AUCTION_CLOSE": {
       const a = state.auction;
       if (state.phase !== "auction" || !a || !a.company || !a.sellerId) return { ok: false, error: "Aucune enchère à clore" };
-      const seller = player(state, a.sellerId)!;
-      // the seller may have sold to the bank meanwhile
-      const percent = Math.min(a.percent, seller.holdings[a.company] ?? 0);
-      const winner = a.highestBidderId ? player(state, a.highestBidderId)! : null;
-      removeHolding(seller, a.company, percent);
-      if (winner && winner.cash >= a.highestBid) {
-        winner.cash -= a.highestBid;
-        seller.cash += a.highestBid;
-        winner.holdings[a.company] = (winner.holdings[a.company] ?? 0) + percent;
-        emit(state, { kind: "auction", playerId: a.chooserId, sellerId: seller.id, company: a.company, percent, price: a.highestBid, winnerId: winner.id, cancelled: false });
-      } else {
-        const price = bankPrice(a.company, percent);
-        seller.cash += price;
-        returnToStock(state, a.company, percent);
-        emit(state, { kind: "auction", playerId: a.chooserId, sellerId: seller.id, company: a.company, percent, price, winnerId: null, cancelled: false });
-      }
-      state.auction = null;
-      state.phase = "act";
+      closeAuction(state);
+      return { ok: true, state };
+    }
+
+    case "AUCTION_PASS": {
+      if (state.phase !== "auction" || !state.auction?.company || soleBidder(state) !== action.playerId) return { ok: false, error: "Impossible de passer" };
+      closeAuction(state);
       return { ok: true, state };
     }
 

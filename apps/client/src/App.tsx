@@ -6,7 +6,7 @@ import { Board } from "./Board";
 import { Chat } from "./Chat";
 import { GamePanel, MarketButton } from "./GamePanel";
 import { Home } from "./Home";
-import { CashHud, TurnBanner } from "./Hud";
+import { CashHud, DiceLauncher, TurnBanner } from "./Hud";
 import { InspectPanel } from "./Inspect";
 import { Lobby } from "./Lobby";
 import { EventOverlay } from "./Overlay";
@@ -27,6 +27,7 @@ export function App() {
         <CashHud game={game} />
         <MarketButton game={game} />
         <TurnBanner game={game} />
+        <DiceLauncher game={game} />
         <AuctionScreen game={game} />
         <AtoutOffer game={game} />
         <InspectPanel game={game} />

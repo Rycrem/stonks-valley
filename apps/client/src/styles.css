@@ -316,7 +316,7 @@ button.link:disabled { opacity: 0.5; cursor: default; }
   }
   .panel.sheet-max { height: 78dvh; }
   .panel.sheet-min { height: auto; overflow: hidden; }
-  .panel.sheet-min > :not(.sheet-handle):not(.turn):not(.roll-btn):not(.error) { display: none; }
+  .panel.sheet-min > :not(.sheet-handle):not(.turn):not(.error) { display: none; }
   .journal-list { max-height: 180px; }
   .sheet-handle { display: flex; justify-content: center; align-items: center; flex: none; height: 34px; margin: -6px 0 -8px; padding: 0; border: none; background: none; width: 100%; position: sticky; top: -6px; z-index: 1; touch-action: none; cursor: grab; }
   .panel.dragging { transition: none; overflow: hidden; }
@@ -468,3 +468,16 @@ button.danger { background: #ef476f; color: #fff; border-color: #ef476f; }
 .stats-table td.best { font-weight: 800; color: #ffd166; }
 .worth-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; font-size: 13px; }
 .worth-legend i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+
+/* the dice wait in the middle of the board: tap them or flick them upwards */
+.dice-launcher { position: absolute; left: 50%; top: 52%; z-index: 19; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 26px 12px; border-radius: 22px; border: 1px solid #ffffff33; background: #0d1422cc; backdrop-filter: blur(10px); color: #fff; cursor: grab; touch-action: none; user-select: none; transform: translate(-50%, calc(-50% + var(--dy, 0px))); animation: launcher-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards; box-shadow: 0 10px 30px #0008; }
+.dice-launcher.dragging { cursor: grabbing; transition: none; }
+.dice-launcher:not(.dragging) { transition: transform 0.2s ease-out; }
+.dice-launcher strong { font-size: 16px; }
+.dice-launcher small { font-size: 11px; opacity: 0.7; }
+.dice-launcher .dice-pair { display: flex; gap: 12px; animation: dice-hint 1.6s ease-in-out infinite; }
+.dice-launcher .big-die.small { width: 42px; height: 42px; border-radius: 10px; }
+.dice-launcher .big-die.small i { width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; }
+.dice-launcher.dragging .dice-pair { animation: none; }
+@keyframes launcher-in { from { opacity: 0; transform: translate(-50%, -30%) scale(0.85); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@keyframes dice-hint { 0%, 60%, 100% { transform: none; } 75% { transform: translateY(-10px) rotate(-8deg); } 88% { transform: translateY(0) rotate(4deg); } }

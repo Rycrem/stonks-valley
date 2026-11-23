@@ -1,4 +1,4 @@
-import { config, type Auction, type GameState } from "@stonks/engine";
+import { config, soleBidder, type Auction, type GameState } from "@stonks/engine";
 import { useEffect, useRef, useState } from "react";
 import { money, PLAYER_COLORS } from "./format";
 import { StockCard } from "./Overlay";
@@ -8,7 +8,7 @@ const LEAVE_MS = 380;
 const STEPS = [100, 500, 1000];
 
 // Seconds left: the server's deadline online, a local 30 s clock on a shared screen
-function useRemaining(a: Auction | null, online: boolean, onExpire: () => void) {
+function useRemaining(a: Auction | null, online: boolean, timed: boolean, onExpire: () => void) {
   const deadline = useStore((s) => s.room?.deadline ?? null);
   const localEnd = useRef<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -28,9 +28,9 @@ function useRemaining(a: Auction | null, online: boolean, onExpire: () => void) 
   const end = online ? deadline : localEnd.current;
   const left = end ? Math.max(0, (end - now) / 1000) : config.auctionTimeoutSeconds;
   useEffect(() => {
-    if (!online && lot && end && left <= 0) onExpire();
+    if (!online && timed && lot && end && left <= 0) onExpire();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, lot, left <= 0]);
+  }, [online, timed, lot, left <= 0]);
   return left;
 }
 
@@ -49,7 +49,8 @@ export function AuctionScreen({ game }: { game: GameState }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.auction]);
-  const left = useRemaining(game.auction, online, () => dispatch({ type: "AUCTION_CLOSE" }));
+  const sole = soleBidder(game);
+  const left = useRemaining(game.auction, online, !sole, () => dispatch({ type: "AUCTION_CLOSE" }));
   if (!shown) return null;
   const a = shown.a;
   const nameOf = (id: string) => game.players.find((p) => p.id === id)?.name ?? "?";
@@ -66,7 +67,7 @@ export function AuctionScreen({ game }: { game: GameState }) {
     <div className={`auction-screen ${shown.leaving ? "leaving" : "entering"}`}>
       <div className="auction-top">
         <span>⚖ ENCHÈRES</span>
-        {a.company && <span className="timer-pill">⏱ {Math.ceil(left)} s</span>}
+        {a.company && !sole && <span className="timer-pill">⏱ {Math.ceil(left)} s</span>}
       </div>
       {!a.company ? (
         <div className="auction-choose">
@@ -122,10 +123,14 @@ export function AuctionScreen({ game }: { game: GameState }) {
             </small>
           </div>
           <div className="bids">
-            <div className="bar">
-              <b style={{ width: `${Math.min(100, (left / config.auctionTimeoutSeconds) * 100)}%` }} />
-            </div>
-            {a.bids.length === 0 && <p className="muted">Aucune offre pour l'instant. Sans offre, la banque rachète à la mise à prix.</p>}
+            {sole ? (
+              <p className="muted">Un seul enchérisseur possible, donc pas de chrono : la première offre remporte le lot. En passant, la banque rachète à la mise à prix.</p>
+            ) : (
+              <div className="bar">
+                <b style={{ width: `${Math.min(100, (left / config.auctionTimeoutSeconds) * 100)}%` }} />
+              </div>
+            )}
+            {!sole && a.bids.length === 0 && <p className="muted">Aucune offre pour l'instant. Sans offre, la banque rachète à la mise à prix.</p>}
             {[...a.bids]
               .reverse()
               .slice(0, 4)
@@ -153,6 +158,7 @@ export function AuctionScreen({ game }: { game: GameState }) {
                         </button>
                       );
                     })}
+                    {sole === p.id && <button onClick={() => dispatch({ type: "AUCTION_PASS", playerId: p.id })}>Passer</button>}
                   </div>
                 );
               })}

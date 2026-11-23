@@ -487,9 +487,12 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
   let tweens: Tween[] = [];
   const now = () => performance.now() / 1000;
   const tween = (dur: number, step: (k: number) => void, done?: () => void, delay = 0) => {
-    tweens.push({ t0: now() + delay, dur, step, done });
+    const tw = { t0: now() + delay, dur, step, done };
+    tweens.push(tw);
     dirty = true;
+    return tw;
   };
+  const cancel = (tw: Tween | null) => (tweens = tweens.filter((t) => t !== tw));
   const easeOut = (k: number) => 1 - (1 - k) ** 3;
   const easeBack = (k: number) => 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
   // the big dice overlay plays first, then the pawn walks
@@ -498,11 +501,12 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
 
   const built = new Map<number, string>();
   const pawnTex = new Map<string, THREE.Texture>();
-  const pawns: { sprite: THREE.Sprite; cell: number; key: string; walking: boolean; out: boolean }[] = [];
+  const pawns: { sprite: THREE.Sprite; cell: number; key: string; walking: Tween | null; to: number; out: boolean }[] = [];
   let first = true;
   let current = -1;
   let follow = false;
   let lastRoll = 0;
+  let diceSpin: Tween[] = [];
 
   function biggestHolding(game: GameState, company: string) {
     const groups = new Map<string, number>();
@@ -580,9 +584,8 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
     const p = pawns[idx]!;
     const from = p.cell;
     const steps = (to - from + board.length) % board.length;
-    p.walking = true;
-    place();
-    tween(
+    p.to = to;
+    p.walking = tween(
       steps * STEP,
       (k) => {
         const f = k * steps;
@@ -593,12 +596,13 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
         p.sprite.position.y += Math.sin((f - i) * Math.PI) * 0.45;
       },
       () => {
-        p.walking = false;
+        p.walking = null;
         p.cell = to;
         place();
       },
       WALK_DELAY,
     );
+    place();
   }
 
   function update(game: GameState, looks: Look[]) {
@@ -647,7 +651,7 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
         sprite.center.set(0.5, 0);
         sprite.scale.set(0.5, 0.8, 1);
         scene.add(sprite);
-        pawn = pawns[idx] = { sprite, cell: p.position, key, walking: false, out: false };
+        pawn = pawns[idx] = { sprite, cell: p.position, key, walking: null, to: p.position, out: false };
       }
       if (pawn.key !== key) {
         pawn.sprite.material.map = tex;
@@ -657,6 +661,12 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
         pawn.out = true;
         const m = pawn.sprite.material;
         tween(0.8, (k) => (m.opacity = 1 - k), () => (pawn!.sprite.visible = false));
+      }
+      // a new move cuts the walk in progress: the pawn jumps to where it was going, then walks again
+      if (pawn.walking && pawn.to !== p.position) {
+        cancel(pawn.walking);
+        pawn.walking = null;
+        pawn.cell = pawn.to;
       }
       if (!p.bankrupt && pawn.cell !== p.position && !pawn.walking) {
         if (first) pawn.cell = p.position;
@@ -678,9 +688,10 @@ export function createBoardScene(host: HTMLElement, events: BoardEvents = {}): B
     if (game.lastRoll && roll !== lastRoll) {
       lastRoll = roll;
       const [a, b] = game.lastRoll;
-      dice.forEach((d, k) => {
+      diceSpin.forEach(cancel);
+      diceSpin = dice.map((d, k) => {
         const r0 = d.rotation.clone();
-        tween(
+        return tween(
           first ? 0.001 : 1.1,
           (t) => {
             d.rotation.set(r0.x + (1 - t) * 9, r0.y, r0.z + (1 - t) * 7);

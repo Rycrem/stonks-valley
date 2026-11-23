@@ -24,7 +24,7 @@ function botTurn(state: GameState): GameState {
     else {
       const bidder = activePlayers(g).find((p) => p.id !== target.id && p.cash > g.auction!.startPrice * 2);
       if (bidder) g = step(g, { type: "BID", playerId: bidder.id, amount: g.auction!.startPrice });
-      g = step(g, { type: "AUCTION_CLOSE" });
+      if (g.phase === "auction") g = step(g, { type: "AUCTION_CLOSE" });
     }
   }
   if (currentPlayer(g).cash < 0) {

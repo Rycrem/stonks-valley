@@ -42,7 +42,6 @@ function botTurn(state: GameState): GameState {
     g = step(g, { type: "BUY", playerId: self.id, purchases: { [company]: pct } });
     budget -= pct;
   }
-  if (g.canBuyAtout) g = step(g, { type: "BUY_ATOUT", playerId: self.id });
   // bots ally with the poorest outsider, accept every invite, and leave alliances now and then
   const outsider = activePlayers(g).filter((p) => p.id !== self.id && !g.alliances.some((a) => a.members.includes(p.id))).sort((x, y) => x.cash - y.cash)[0];
   if (outsider && g.log.length % 7 === 0) {

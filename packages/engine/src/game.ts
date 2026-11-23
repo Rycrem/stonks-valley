@@ -6,7 +6,6 @@ import type { CompanyId } from "./types";
 export type Action =
   | { type: "ROLL"; playerId: PlayerId; dice?: [number, number] }
   | { type: "BUY"; playerId: PlayerId; purchases: Record<CompanyId, number> }
-  | { type: "BUY_ATOUT"; playerId: PlayerId }
   | { type: "SELL_TO_BANK"; playerId: PlayerId; company: CompanyId; percent: number }
   | { type: "OFFER"; playerId: PlayerId; ownerId: PlayerId; company: CompanyId; percent: number; price: number }
   | { type: "RESPOND_OFFER"; playerId: PlayerId; accept: boolean; counterPrice?: number }
@@ -33,7 +32,7 @@ export type Result = { ok: true; state: GameState } | { ok: false; error: string
 const companyById = new Map(companies.map((c) => [c.id, c]));
 const cityStockOrigin = board.flatMap((c) => (c.type === "city" ? [c] : []));
 
-// Atout cards: one is drawn at random on each Atout cell, the player may buy it
+// Atout cards: one is drawn at random on each Atout cell and given to the player
 export const ATOUTS = [
   { id: "bouclier", name: "Bouclier anti-OPA", text: "Annule la prochaine enchère forcée sur tes actions." },
   { id: "exoneration", name: "Exonération", text: "Ta prochaine redevance à payer est offerte." },
@@ -84,8 +83,6 @@ export function createGame(players: { id: PlayerId; name: string }[], seed: numb
     lastRoll: null,
     buyScope: null,
     boughtThisTurn: 0,
-    canBuyAtout: false,
-    atoutCard: null,
     auction: null,
     offer: null,
     alliances: [],
@@ -439,7 +436,6 @@ function payRoyalty(state: GameState, payer: Player, cellId: string): void {
 function landOn(state: GameState, p: Player, pips: number): void {
   const cell = board[p.position]!;
   state.buyScope = null;
-  state.canBuyAtout = false;
   state.phase = "act";
   switch (cell.type) {
     case "city":
@@ -461,8 +457,9 @@ function landOn(state: GameState, p: Player, pips: number): void {
     case "atout": {
       const [r, next] = nextRandom(state.seed);
       state.seed = next;
-      state.canBuyAtout = true;
-      state.atoutCard = ATOUTS[Math.floor(r * ATOUTS.length)]!.id;
+      const card = ATOUTS[Math.floor(r * ATOUTS.length)]!;
+      emit(state, { kind: "atout", playerId: p.id, text: `Atout pris : ${card.name}. ${card.text}`, amount: 0, before: p.cash, after: p.cash });
+      p.atouts.push(card.id);
       break;
     }
     case "actu": {
@@ -560,8 +557,6 @@ function nextTurn(state: GameState): void {
   state.phase = "roll";
   state.buyScope = null;
   state.boughtThisTurn = 0;
-  state.canBuyAtout = false;
-  state.atoutCard = null;
   state.offer = null;
   state.turnBuys = {};
   state.turnDeals = [];
@@ -640,16 +635,6 @@ export function applyAction(prev: GameState, action: Action): Result {
       state.boughtThisTurn += total;
       statsOf(state, cur.id).spentOnStocks += cost;
       statsOf(state, cur.id).percentBought += total;
-      return { ok: true, state };
-    }
-
-    case "BUY_ATOUT": {
-      if (!isCurrent || state.phase !== "act" || !state.canBuyAtout) return { ok: false, error: "Achat d'Atout impossible" };
-      const card = atoutById.get(state.atoutCard ?? "bouclier")!;
-      emit(state, { kind: "atout", playerId: cur.id, text: `Atout pris : ${card.name}. ${card.text}`, amount: 0, before: cur.cash, after: cur.cash });
-      cur.atouts.push(card.id);
-      state.canBuyAtout = false;
-      state.atoutCard = null;
       return { ok: true, state };
     }
 

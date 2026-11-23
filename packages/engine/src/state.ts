@@ -136,9 +136,6 @@ export interface GameState {
   lastRoll: [number, number] | null;
   buyScope: BuyScope | null;
   boughtThisTurn: number;
-  canBuyAtout: boolean;
-  // the Atout card on sale on the cell the current player landed on
-  atoutCard: string | null;
   auction: Auction | null;
   offer: Offer | null;
   // allied players add up their % to be the biggest holder and share the royalty

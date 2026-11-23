@@ -112,7 +112,7 @@ En début de partie, chaque joueur lance 2 dés : le plus haut total commence, p
 
 ## Atouts
 
-Sur une case Atout, une carte est tirée au hasard et le joueur peut la prendre gratuitement. Les cartes ne se vendent pas et ne s'échangent pas.
+Sur une case Atout, une carte est tirée au hasard et donnée gratuitement au joueur, sans choix à faire. Les cartes ne se vendent pas et ne s'échangent pas.
 
 - **Bouclier anti-OPA** : annule la prochaine enchère forcée sur ses actions.
 - **Exonération** : la prochaine redevance à payer est offerte (utilisée automatiquement).

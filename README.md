@@ -34,5 +34,6 @@ Chaque merge sur `main` publie l'image `ghcr.io/rycrem/stonks-valley:latest` (am
 | `PUBLIC_URL` | Adresse du site, utilisée dans les liens de réinitialisation (`https://jeu.tortuebox.fr`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Envoi des e-mails "mot de passe oublié". Facultatif : sans SMTP, l'admin réinitialise les mots de passe à la main. |
 | `AUTO_UPDATE` | `1` (défaut) : mise à jour depuis git au démarrage ; `0` : version de l'image |
+| `SAVE_GAMES` | `1` (défaut) : les parties en cours sont sauvegardées dans `DATA_DIR/games.json` et reprennent après un redémarrage ou une pause (24 h max) ; `0` : désactivé |
 | `GIT_REPO`, `GIT_BRANCH` | Source de la mise à jour (défaut : ce dépôt, `main`) |
-| `DATA_DIR` | Dossier des profils (`/data` dans l'image) |
+| `DATA_DIR` | Dossier des profils et des parties sauvegardées (`/data` dans l'image) |

@@ -26,7 +26,7 @@ Dans `/volume1/docker/docker-compose.yml`, sous `services:` :
 ```
 
 - `8090` : port côté NAS, à changer s'il est déjà pris.
-- `./stonks-valley` : dossier des comptes, points et objets (`profiles.json`). C'est le seul dossier à sauvegarder.
+- `./stonks-valley` : dossier des comptes, points et objets (`profiles.json`) et des parties en cours (`games.json`, gardées 24 h quand tout le monde est parti ou pendant un redémarrage). C'est le seul dossier à sauvegarder.
 
 ## 2. Remplir le `.env`
 

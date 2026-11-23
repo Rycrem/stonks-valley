@@ -156,9 +156,6 @@ button.link:disabled { opacity: 0.5; cursor: default; }
 .event-card .plus { color: #0a9d6e; }
 .event-card .minus { color: #d1344f; }
 .event-card .sub { font-size: 13px; color: #6b7a90; margin-top: 6px; animation: fade-in 0.4s 0.6s both; }
-.atout-offer { position: absolute; left: 50%; top: 45%; z-index: 19; animation: card-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
-.atout-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
-.atout-actions button { flex: 1; }
 .market-moves { display: grid; gap: 6px; margin-top: 12px; }
 .market-move { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: 10px; background: #0000000d; font-weight: 700; animation: pop 0.4s both; }
 .mini-dice { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }

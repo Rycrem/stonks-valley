@@ -132,15 +132,13 @@ describe("buying", () => {
     expect(buyableStock(g)).toEqual({ amb: 23, sonyx: 10, appel: 9, netflox: 12, samsong: 9, spotifaille: 23, macrosoft: 12, meto: 9, xiaomy: 7, intol: 9, gogol: 9, tesler: 7, nvidio: 7, amazone: 7, oracul: 5, tsmb: 4 });
   });
 
-  it("an Atout is free and can be taken even with two players left", () => {
-    const g = at(createGame(P.slice(0, 2), 1), "atout-1");
-    expect(g.canBuyAtout).toBe(true);
-    expect(ATOUTS.map((a) => a.id)).toContain(g.atoutCard);
-    const card = g.atoutCard!;
-    const g2 = ok(g, { type: "BUY_ATOUT", playerId: "a" });
-    expect(g2.players[0]!.atouts).toEqual([card]);
-    expect(g2.atoutCard).toBeNull();
-    expect(g2.players[0]!.cash).toBe(g.players[0]!.cash);
+  it("landing on an Atout cell gives the card for free, even with two players left", () => {
+    const start = createGame(P.slice(0, 2), 1);
+    const g = at(start, "atout-1");
+    expect(g.players[0]!.atouts).toHaveLength(1);
+    expect(ATOUTS.map((a) => a.id)).toContain(g.players[0]!.atouts[0]);
+    expect(g.players[0]!.cash).toBe(start.players[0]!.cash);
+    expect(g.events.at(-1)).toMatchObject({ kind: "atout", playerId: "a" });
   });
 
   it("Exonération waives the next royalty, Dividende doubles the next one received", () => {

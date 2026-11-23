@@ -1,6 +1,5 @@
 import { EndStats } from "./EndStats";
 import { DiceAdmin } from "./DiceAdmin";
-import { AtoutOffer } from "./AtoutOffer";
 import { AuctionScreen } from "./AuctionScreen";
 import { Board } from "./Board";
 import { Chat } from "./Chat";
@@ -28,7 +27,6 @@ export function App() {
         <MarketButton game={game} />
         <TurnBanner game={game} />
         <AuctionScreen game={game} />
-        <AtoutOffer game={game} />
         <InspectPanel game={game} />
         <DiceAdmin game={game} />
         <EndStats game={game} />

@@ -100,11 +100,6 @@ export function GamePanel({ game }: { game: GameState }) {
       {game.phase === "act" && !game.offer && myTurn && (
         <>
           {game.buyScope && <BuyPanel game={game} />}
-          {game.canBuyAtout && (
-            <button onClick={() => dispatch({ type: "BUY_ATOUT", playerId: me.id })}>
-              Prendre l'Atout {atoutById.get(game.atoutCard ?? "bouclier")!.name} (gratuit)
-            </button>
-          )}
           <OfferForm game={game} />
           <SellForm game={game} />
           <button className="primary" onClick={() => dispatch({ type: "END_TURN", playerId: me.id })}>

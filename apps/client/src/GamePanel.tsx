@@ -80,11 +80,6 @@ export function GamePanel({ game }: { game: GameState }) {
         </div>
       )}
 
-      {game.phase === "roll" && myTurn && (
-        <button className="primary roll-btn" onClick={() => dispatch({ type: "ROLL", playerId: me.id })}>
-          Lancer les dés
-        </button>
-      )}
       {!myTurn && game.phase !== "auction" && !game.offer && <p className="muted">En attente de {me.name}...</p>}
 
       {game.phase !== "roll" && (

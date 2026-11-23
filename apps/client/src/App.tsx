@@ -5,7 +5,7 @@ import { Board } from "./Board";
 import { Chat } from "./Chat";
 import { GamePanel, MarketButton } from "./GamePanel";
 import { Home } from "./Home";
-import { CashHud, TurnBanner } from "./Hud";
+import { CashHud, DiceLauncher, TurnBanner } from "./Hud";
 import { InspectPanel } from "./Inspect";
 import { Lobby } from "./Lobby";
 import { EventOverlay } from "./Overlay";
@@ -22,10 +22,15 @@ export function App() {
     <div className="layout">
       <div className="board-wrap">
         <Board game={game} looks={game.players.map((p, i) => room?.players.find((m) => m.id === p.id)?.look ?? STARTER_LOOKS[i % STARTER_LOOKS.length]!)} />
-        <EventOverlay game={game} />
         <CashHud game={game} />
         <MarketButton game={game} />
-        <TurnBanner game={game} />
+        {/* the popups of the middle of the board stack one under the other instead of overlapping */}
+        <div className="center-stack">
+          <TurnBanner game={game} />
+          <EventOverlay game={game} />
+          <AtoutOffer game={game} />
+          <DiceLauncher game={game} />
+        </div>
         <AuctionScreen game={game} />
         <InspectPanel game={game} />
         <DiceAdmin game={game} />

@@ -1,5 +1,5 @@
 import { companies, config } from "./data";
-import { activePlayers, buyableStock, buyCost, currentPlayer, type Action } from "./game";
+import { activePlayers, buyableStock, buyCost, currentPlayer, soleBidder, type Action } from "./game";
 import type { GameState, PlayerId } from "./state";
 
 const RESERVE = 1500;
@@ -43,7 +43,8 @@ export function botAction(g: GameState, id: PlayerId): Action | null {
     if (a.highestBidderId === id) return null;
     const next = a.highestBidderId ? a.highestBid + config.minBidIncrement : a.startPrice;
     const max = a.percent * pricePer(a.company);
-    return next <= max && me.cash - next > RESERVE ? { type: "BID", playerId: id, amount: next } : null;
+    if (next <= max && me.cash - next > RESERVE) return { type: "BID", playerId: id, amount: next };
+    return soleBidder(g) === id ? { type: "AUCTION_PASS", playerId: id } : null;
   }
 
   if (currentPlayer(g).id !== id) return null;

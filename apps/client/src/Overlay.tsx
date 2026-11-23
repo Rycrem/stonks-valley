@@ -43,7 +43,7 @@ function timing(e: GameEvent): [number, number] {
   return [2800, 0];
 }
 
-const PIPS: Record<number, [number, number][]> = {
+export const PIPS: Record<number, [number, number][]> = {
   1: [[50, 50]],
   2: [[27, 27], [73, 73]],
   3: [[25, 25], [50, 50], [75, 75]],
@@ -317,7 +317,10 @@ export function EventOverlay({ game }: { game: GameState }) {
     const fresh = game.events.filter((e) => e.id > seen.current!);
     if (!fresh.length) return;
     seen.current = max;
-    setQueue((q) => [...q, ...fresh]);
+    // a new move cuts the card on screen and what was still waiting from the previous one
+    setQueue(fresh);
+    setCurrent((c) => c && { ...c, leaving: true, gap: 0 });
+    setHeld(false);
   }, [game.events]);
 
   useEffect(() => {

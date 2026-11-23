@@ -466,6 +466,26 @@ describe("auctions", () => {
     expect(g.players[1]!.cash).toBe(config.startingCash + start);
   });
 
+  it("with a single possible bidder, the auction ends on their bid or their pass", () => {
+    const two = () => {
+      const g = createGame(P.slice(0, 2), 1);
+      g.players[1]!.holdings = { appel: 50 };
+      return ok(at(g, "encheres-1"), { type: "AUCTION_CHOOSE", playerId: "a", ownerId: "b", company: "appel" });
+    };
+    let g = two();
+    const start = g.auction!.startPrice;
+    g = ok(g, { type: "BID", playerId: "a", amount: start });
+    expect(g.phase).toBe("act");
+    expect(g.events.at(-1)).toMatchObject({ kind: "auction", winnerId: "a", price: start });
+    g = ok(two(), { type: "AUCTION_PASS", playerId: "a" });
+    expect(g.phase).toBe("act");
+    expect(g.events.at(-1)).toMatchObject({ kind: "auction", winnerId: null });
+    let three = auction();
+    three = ok(three, { type: "AUCTION_CHOOSE", playerId: "a", ownerId: "b", company: "appel" });
+    expect(err(three, { type: "AUCTION_PASS", playerId: "a" })).toMatch(/passer/);
+    expect(ok(three, { type: "BID", playerId: "a", amount: start }).phase).toBe("auction");
+  });
+
   it("the targeted owner can cancel it with an Atout", () => {
     let g = createGame(P, 1);
     g.players[1]!.atouts = ["bouclier"];

@@ -481,10 +481,9 @@ button.danger { background: #ef476f; color: #fff; border-color: #ef476f; }
 
 /* middle of the board: banner, event card, atout offer and dice launcher in one column */
 .center-stack { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 64px 12px 12px; pointer-events: none; }
-.center-stack > :is(.overlay-slot, .atout-offer, .turn-popup, .dice-launcher) { position: relative; left: auto; top: auto; bottom: auto; flex: none; min-height: 0; max-height: 100%; }
+.center-stack > :is(.overlay-slot, .turn-popup, .dice-launcher) { position: relative; left: auto; top: auto; bottom: auto; flex: none; min-height: 0; max-height: 100%; }
 .center-stack > .overlay-slot { animation-name: stack-in; }
 .center-stack > .overlay-slot.leaving { animation-name: stack-out; }
-.center-stack > .atout-offer { pointer-events: auto; animation-name: stack-in; }
 .center-stack > .turn-popup { animation-name: stack-turn-pop; }
 .center-stack > .dice-launcher { pointer-events: auto; transform: translateY(var(--dy, 0px)); animation-name: stack-in; }
 @keyframes stack-in { from { opacity: 0; transform: translateY(10%) scale(0.8) rotate(-3deg); } to { opacity: 1; transform: none; } }

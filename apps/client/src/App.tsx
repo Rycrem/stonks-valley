@@ -28,7 +28,6 @@ export function App() {
         <div className="center-stack">
           <TurnBanner game={game} />
           <EventOverlay game={game} />
-          <AtoutOffer game={game} />
           <DiceLauncher game={game} />
         </div>
         <AuctionScreen game={game} />

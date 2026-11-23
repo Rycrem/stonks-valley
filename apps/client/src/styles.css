@@ -255,7 +255,10 @@ button.link:disabled { opacity: 0.5; cursor: default; }
 .chip.clickable { cursor: pointer; transition: transform 0.15s; }
 .chip.clickable:hover { transform: translateY(-2px); }
 .buy-gain { grid-column: 1 / -1; color: #9aa7c2; font-size: 12px; }
-.ally-btn { font-size: 11px; padding: 2px 8px; }
+.ally-btn { font-size: 11px; padding: 2px 8px; white-space: nowrap; }
+.player > .row:first-child strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player > .row:first-child .money { white-space: nowrap; }
+.player-actions { flex-wrap: wrap; gap: 6px; }
 @keyframes slide-in { from { opacity: 0; transform: translateX(-30px) scale(0.96); } to { opacity: 1; transform: none; } }
 @keyframes slide-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-30px) scale(0.96); } }
 .buy-btn { border-width: 2px; transition: border-color 0.25s, box-shadow 0.25s; }

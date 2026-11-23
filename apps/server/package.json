@@ -12,13 +12,12 @@
   "dependencies": {
     "@stonks/engine": "workspace:*",
     "@stonks/shared": "workspace:*",
-    "nodemailer": "6.9.16",
+    "nodemailer": "10.6.1",
     "socket.io": "4.8.1",
     "tsx": "4.19.2"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
-    "@types/nodemailer": "6.4.17",
     "socket.io-client": "4.8.1"
   }
 }
